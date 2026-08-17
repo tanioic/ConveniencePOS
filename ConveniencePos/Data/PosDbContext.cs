@@ -1,3 +1,4 @@
+using ConveniencePos.Data.Seed;
 using ConveniencePos.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,5 +16,10 @@ public class PosDbContext : DbContext
         {
             optionsBuilder.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=ConveniencePosDb;Trusted_Connection=True;");
         }
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Product>().HasData(ProductSeedData.GetProducts());
     }
 }
