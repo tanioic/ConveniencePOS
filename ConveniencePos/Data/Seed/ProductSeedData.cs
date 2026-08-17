@@ -28,7 +28,7 @@ public static class ProductSeedData
             JanCode = "999999",
             Name = "ポテトチップス",
             Price = 180m,
-            TaxRate = 8
+            TaxRate = 10
         },
         new Product
         {
@@ -44,7 +44,7 @@ public static class ProductSeedData
             JanCode = "222222",
             Name = "コーヒー 熱 350ml",
             Price = 110m,
-            TaxRate = 8
+            TaxRate = 10
         }
     ];
 }
