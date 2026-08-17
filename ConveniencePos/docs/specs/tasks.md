@@ -8,7 +8,7 @@
 
 ## フェーズ2: ロジックとViewModelの実装
 - [ ] Task 2.1: バーコード入力を処理する `BarcodeService` を作成する
-- [ ] Task 2.2: 会計計算ロジックと画面のデータを保持する `MainViewModel.cs` を作成する
+- [X] Task 2.2: 会計計算ロジックと画面のデータを保持する `MainViewModel.cs` を作成する
 
 ## フェーズ3: 画面（UI）の構築と結合
 - [ ] Task 3.1: `MainWindow.xaml` をデザインし、ViewModelとバインディングする
