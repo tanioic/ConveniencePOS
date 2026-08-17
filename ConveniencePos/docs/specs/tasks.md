@@ -2,8 +2,8 @@
 
 ## フェーズ1: データベースとモデルの構築
 - [X] Task 1.1: EF Coreのデータモデル（Product, Transaction, TransactionItem）クラスを `Models/` フォルダに作成する
-- [ ] Task 1.2: `Data/PosDbContext.cs` を作成し、SQL Serverへの接続設定を行う
-- [ ] Task 1.3: EF Coreのマイグレーションを実行し、ローカルにデータベースを作成する
+- [X] Task 1.2: `Data/PosDbContext.cs` を作成し、SQL Serverへの接続設定を行う
+- [X] Task 1.3: EF Coreのマイグレーションを実行し、ローカルにデータベースを作成する
 - [ ] Task 1.4: テスト用の商品データ（マスターデータ）をデータベースに挿入する
 
 ## フェーズ2: ロジックとViewModelの実装
