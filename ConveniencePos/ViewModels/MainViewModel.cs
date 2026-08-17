@@ -1,4 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.IO;
+using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ConveniencePos.Data;
@@ -95,6 +98,46 @@ public partial class MainViewModel : ObservableObject
         _dbContext.Transactions.Add(transaction);
         await _dbContext.SaveChangesAsync();
 
+        var trxId = transaction.Id;
+        var received = ReceivedAmount;
+        var change = Change;
+        var snapshot = CartItems
+            .Select(c => new { c.Name, c.Quantity, c.LineTotal, c.TaxRate })
+            .ToList();
+        var sub = Subtotal;
+        var taxable8 = TaxableAmount8;
+        var taxable10 = TaxableAmount10;
+        var tax8 = TaxAmount8;
+        var tax10 = TaxAmount10;
+        var taxTotal = TaxAmount;
+        var total = TotalAmount;
+
+        var sb = new StringBuilder();
+        const int w = 32;
+        sb.AppendLine(new string('=', w));
+        sb.AppendLine(CenterText("Convenience POS Store", w));
+        sb.AppendLine("レジ#01  担当: 鈴木 レジ担当");
+        sb.AppendLine();
+        sb.AppendLine($"取引番号: TRX-{trxId}");
+        sb.AppendLine(DateTime.Now.ToString("yyyy/MM/dd HH:mm"));
+        sb.AppendLine();
+        foreach (var item in snapshot)
+        {
+            sb.AppendLine($"{item.Name} {item.Quantity}  ¥{item.LineTotal:N0} {item.TaxRate}%");
+        }
+        sb.AppendLine(AmountLine("税抜合計", $"¥{sub:N0}"));
+        sb.AppendLine($"8% 対象: ¥{taxable8:N0} 消費税: ¥{tax8:N0}");
+        sb.AppendLine($"10%対象: ¥{taxable10:N0} 消費税: ¥{tax10:N0}");
+        sb.AppendLine(AmountLine("消費税合計", $"¥{taxTotal:N0}"));
+        sb.AppendLine();
+        sb.AppendLine(AmountLine("税込合計", $"¥{total:N0}"));
+        sb.AppendLine(AmountLine("現金 お預かり", $"¥{received:N0}"));
+        sb.AppendLine(AmountLine("お釣り", $"¥{change:N0}"));
+        sb.AppendLine("ありがとうお越し下さいました");
+
+        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        File.WriteAllText(Path.Combine(desktop, $"receipt_{trxId}.txt"), sb.ToString());
+
         CartItems.Clear();
         ReceivedAmount = 0;
         RefreshTotals();
@@ -115,6 +158,33 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(TaxAmount));
         OnPropertyChanged(nameof(TotalAmount));
         OnPropertyChanged(nameof(Change));
+    }
+
+    private static int DisplayWidth(string s)
+    {
+        int width = 0;
+        foreach (var c in s)
+        {
+            if (c >= 0x3000 && c < 0xA000) width += 2;
+            else if (c >= 0xAC00 && c < 0xD800) width += 2;
+            else if (c >= 0xF900 && c < 0xFB00) width += 2;
+            else if (c >= 0xFF01 && c < 0xFF5F) width += 2;
+            else width += 1;
+        }
+        return width;
+    }
+
+    private static string CenterText(string text, int totalWidth)
+    {
+        int pad = Math.Max(0, (totalWidth - DisplayWidth(text)) / 2);
+        return new string(' ', pad) + text;
+    }
+
+    private static string AmountLine(string label, string amount)
+    {
+        const int width = 32;
+        int spaces = width - DisplayWidth(label) - DisplayWidth(amount);
+        return label + new string(' ', Math.Max(1, spaces)) + amount;
     }
 }
 
