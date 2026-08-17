@@ -24,3 +24,46 @@
   - 初期データ（Seedデータ）を更新し、おにぎり梅・緑茶は「8%」、ポテトチップスは「10%」、新規に追加する日用品（例：ティッシュ 200円）は「10%」とする。
 - **ViewModelのロジック変更**:
   - `MainViewModel` 内の合計金額・消費税計算処理を、商品の `TaxRate` を判定して計算するロジックに修正する。
+
+## 4. 実装内容 (Implement)
+
+### 4-1. データモデル (完了)
+- `Product.TaxRate` (int): 商品の適用税率 (8 or 10)。既存モデルに追加済み。
+- `TransactionItem.AppliedTaxRate` (int): 購入時点の税率記録。既存モデルに追加済み。
+
+### 4-2. ViewModel (`MainViewModel.cs`) (完了)
+- `CartItemViewModel.TaxRate` (int): カート内商品の税率を保持するプロパティを追加。
+- `AddItemAsync`: 商品追加時に `product.TaxRate` を `CartItemViewModel.TaxRate` に設定。
+- 税率別集計プロパティ:
+  - `TaxableAmount8`: 税率8%商品のLineTotal合算額
+  - `TaxableAmount10`: 税率10%商品のLineTotal合算額
+  - `TaxAmount8`: `Math.Floor(TaxableAmount8 * 0.08m)` (端数切捨て)
+  - `TaxAmount10`: `Math.Floor(TaxableAmount10 * 0.10m)` (端数切捨て)
+  - `TaxAmount`: `TaxAmount8 + TaxAmount10` (合算消費税)
+  - `TotalAmount`: `Subtotal + TaxAmount`
+- `ConfirmTransactionAsync`: 各 `TransactionItem` に `AppliedTaxRate = i.TaxRate` を設定して保存。
+- `RefreshTotals`: 追加した全プロパティの `OnPropertyChanged` を通知。
+
+### 4-3. UI (`MainWindow.xaml`) (完了)
+- **DataGrid**: 「税率」カラムを追加。バインディング: `{Binding TaxRate, StringFormat='{}{0}%'}`
+- **右パレット（お会計エリア）**:
+  - Row1: 小計 (Subtotal)
+  - Row2: 8%対象額 (TaxableAmount8)
+  - Row3: 消費税 8% (TaxAmount8)
+  - Row4: 10%対象額 (TaxableAmount10)
+  - Row5: 消費税 10% (TaxAmount10)
+  - Row6: 合計 (TotalAmount)
+  - Row7: 預かり金額 / お釣り
+  - Row8: 会計確定ボタン
+
+### 4-4. 計算ロジック詳細
+```
+例: おにぎり梅 ¥160 (8%) × 1 + ポテトチップス ¥200 (10%) × 1
+
+TaxableAmount8  = 160
+TaxableAmount10 = 200
+TaxAmount8  = Math.Floor(160 × 0.08) = Math.Floor(12.8) = 12
+TaxAmount10 = Math.Floor(200 × 0.10) = Math.Floor(20.0) = 20
+TaxAmount   = 12 + 20 = 32
+TotalAmount = 360 + 32 = 392
+```

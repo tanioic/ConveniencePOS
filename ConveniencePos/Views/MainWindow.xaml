@@ -153,6 +153,15 @@
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
+                        <DataGridTextColumn Header="税率" Binding="{Binding TaxRate, StringFormat='{}{0}%'}" Width="60">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontSize" Value="15"/>
+                                    <Setter Property="TextAlignment" Value="Center"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
                         <DataGridTextColumn Header="数量" Binding="{Binding Quantity}" Width="80">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
@@ -196,6 +205,9 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
@@ -213,18 +225,48 @@
                     </Grid>
                 </Border>
 
-                <!-- 消費税 -->
+                <!-- 8%対象額 -->
                 <Border Grid.Row="2" Background="#F8F9FA" CornerRadius="6"
                         Padding="14,12" Margin="0,0,0,10">
                     <Grid>
+                        <TextBlock Text="8%対象額" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock Text="{Binding TaxableAmount8, StringFormat='¥{0:N0}'}"
+                                   Style="{StaticResource ValueStyle}"/>
+                    </Grid>
+                </Border>
+
+                <!-- 8%消費税 -->
+                <Border Grid.Row="3" Background="#F8F9FA" CornerRadius="6"
+                        Padding="14,12" Margin="0,0,0,10">
+                    <Grid>
+                        <TextBlock Text="消費税 (8%)" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock Text="{Binding TaxAmount8, StringFormat='¥{0:N0}'}"
+                                   Style="{StaticResource ValueStyle}"/>
+                    </Grid>
+                </Border>
+
+                <!-- 10%対象額 -->
+                <Border Grid.Row="4" Background="#F8F9FA" CornerRadius="6"
+                        Padding="14,12" Margin="0,0,0,10">
+                    <Grid>
+                        <TextBlock Text="10%対象額" Style="{StaticResource LabelStyle}"/>
+                        <TextBlock Text="{Binding TaxableAmount10, StringFormat='¥{0:N0}'}"
+                                   Style="{StaticResource ValueStyle}"/>
+                    </Grid>
+                </Border>
+
+                <!-- 10%消費税 -->
+                <Border Grid.Row="5" Background="#F8F9FA" CornerRadius="6"
+                        Padding="14,12" Margin="0,0,0,10">
+                    <Grid>
                         <TextBlock Text="消費税 (10%)" Style="{StaticResource LabelStyle}"/>
-                        <TextBlock Text="{Binding TaxAmount, StringFormat='¥{0:N0}'}"
+                        <TextBlock Text="{Binding TaxAmount10, StringFormat='¥{0:N0}'}"
                                    Style="{StaticResource ValueStyle}"/>
                     </Grid>
                 </Border>
 
                 <!-- 合計金額 -->
-                <Border Grid.Row="3" Background="#1A1A2E" CornerRadius="6"
+                <Border Grid.Row="6" Background="#1A1A2E" CornerRadius="6"
                         Padding="14,14" Margin="0,0,0,16">
                     <Grid>
                         <TextBlock Text="合計" FontSize="18" FontWeight="Bold"
@@ -238,9 +280,9 @@
                 </Border>
 
                 <!-- 預かり金額 -->
-                <TextBlock Grid.Row="4" Text="預かり金額" FontSize="14"
+                <TextBlock Grid.Row="7" Text="預かり金額" FontSize="14"
                            Foreground="#555" Margin="0,4,0,6"/>
-                <TextBox Grid.Row="4"
+                <TextBox Grid.Row="7"
                          Text="{Binding ReceivedAmount, UpdateSourceTrigger=PropertyChanged}"
                          Style="{StaticResource InputStyle}"
                          VerticalContentAlignment="Center"
@@ -248,7 +290,7 @@
                          x:Name="ReceivedAmountTextBox"/>
 
                 <!-- お釣り -->
-                <Border Grid.Row="4" Background="#EBF5FB" CornerRadius="6"
+                <Border Grid.Row="7" Background="#EBF5FB" CornerRadius="6"
                         Padding="14,12" Margin="0,88,0,0">
                     <Grid>
                         <TextBlock Text="お釣り" Style="{StaticResource LabelStyle}"
@@ -262,7 +304,7 @@
                 </Border>
 
                 <!-- 会計確定ボタン -->
-                <Button Grid.Row="5" Content="会計確定"
+                <Button Grid.Row="8" Content="会計確定"
                         Command="{Binding ConfirmTransactionCommand}"
                         Style="{StaticResource PaymentButton}"
                         Margin="0,10,0,0"/>

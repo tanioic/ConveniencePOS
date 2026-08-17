@@ -21,7 +21,19 @@ public partial class MainViewModel : ObservableObject
 
     public decimal Subtotal => CartItems.Sum(i => i.LineTotal);
 
-    public decimal TaxAmount => Math.Floor(Subtotal * 0.1m);
+    public decimal TaxableAmount8 => CartItems
+        .Where(i => i.TaxRate == 8)
+        .Sum(i => i.LineTotal);
+
+    public decimal TaxableAmount10 => CartItems
+        .Where(i => i.TaxRate == 10)
+        .Sum(i => i.LineTotal);
+
+    public decimal TaxAmount8 => Math.Floor(TaxableAmount8 * 0.08m);
+
+    public decimal TaxAmount10 => Math.Floor(TaxableAmount10 * 0.10m);
+
+    public decimal TaxAmount => TaxAmount8 + TaxAmount10;
 
     public decimal TotalAmount => Subtotal + TaxAmount;
 
@@ -51,6 +63,7 @@ public partial class MainViewModel : ObservableObject
                 ProductId = product.Id,
                 Name = product.Name,
                 UnitPrice = product.Price,
+                TaxRate = product.TaxRate,
                 Quantity = 1
             });
         }
@@ -74,7 +87,8 @@ public partial class MainViewModel : ObservableObject
             {
                 ProductId = i.ProductId,
                 Quantity = i.Quantity,
-                UnitPrice = i.UnitPrice
+                UnitPrice = i.UnitPrice,
+                AppliedTaxRate = i.TaxRate
             }).ToList()
         };
 
@@ -94,6 +108,10 @@ public partial class MainViewModel : ObservableObject
     private void RefreshTotals()
     {
         OnPropertyChanged(nameof(Subtotal));
+        OnPropertyChanged(nameof(TaxableAmount8));
+        OnPropertyChanged(nameof(TaxableAmount10));
+        OnPropertyChanged(nameof(TaxAmount8));
+        OnPropertyChanged(nameof(TaxAmount10));
         OnPropertyChanged(nameof(TaxAmount));
         OnPropertyChanged(nameof(TotalAmount));
         OnPropertyChanged(nameof(Change));
@@ -107,6 +125,8 @@ public partial class CartItemViewModel : ObservableObject
     public string Name { get; init; } = string.Empty;
 
     public decimal UnitPrice { get; init; }
+
+    public int TaxRate { get; init; }
 
     [ObservableProperty]
     private int _quantity;
