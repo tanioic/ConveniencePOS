@@ -61,14 +61,16 @@ public partial class MainViewModel : ObservableObject
         }
         else
         {
-            CartItems.Add(new CartItemViewModel
+            var item = new CartItemViewModel
             {
                 ProductId = product.Id,
                 Name = product.Name,
                 UnitPrice = product.Price,
                 TaxRate = product.TaxRate,
                 Quantity = 1
-            });
+            };
+            item.PropertyChanged += OnCartItemPropertyChanged;
+            CartItems.Add(item);
         }
 
         BarcodeInput = string.Empty;
@@ -102,7 +104,7 @@ public partial class MainViewModel : ObservableObject
         var received = ReceivedAmount;
         var change = Change;
         var snapshot = CartItems
-            .Select(c => new { c.Name, c.Quantity, c.LineTotal, c.TaxRate })
+            .Select(c => new { c.Name, c.Quantity, c.LineTotalWithTax, c.TaxRate })
             .ToList();
         var sub = Subtotal;
         var taxable8 = TaxableAmount8;
@@ -116,14 +118,14 @@ public partial class MainViewModel : ObservableObject
         const int w = 32;
         sb.AppendLine(new string('=', w));
         sb.AppendLine(CenterText("Convenience POS Store", w));
-        sb.AppendLine("レジ#01  担当: 鈴木 レジ担当");
+        sb.AppendLine("レジ#01  担当: 谷本 レジ担当");
         sb.AppendLine();
         sb.AppendLine($"取引番号: TRX-{trxId}");
         sb.AppendLine(DateTime.Now.ToString("yyyy/MM/dd HH:mm"));
         sb.AppendLine();
         foreach (var item in snapshot)
         {
-            sb.AppendLine($"{item.Name} {item.Quantity}  ¥{item.LineTotal:N0} {item.TaxRate}%");
+            sb.AppendLine($"{item.Name} {item.Quantity}  ¥{item.LineTotalWithTax:N0} {item.TaxRate}%");
         }
         sb.AppendLine(AmountLine("税抜合計", $"¥{sub:N0}"));
         sb.AppendLine($"8% 対象: ¥{taxable8:N0} 消費税: ¥{tax8:N0}");
@@ -131,13 +133,15 @@ public partial class MainViewModel : ObservableObject
         sb.AppendLine(AmountLine("消費税合計", $"¥{taxTotal:N0}"));
         sb.AppendLine();
         sb.AppendLine(AmountLine("税込合計", $"¥{total:N0}"));
-        sb.AppendLine(AmountLine("現金 お預かり", $"¥{received:N0}"));
+        sb.AppendLine(AmountLine("[現金] お預かり", $"¥{received:N0}"));
         sb.AppendLine(AmountLine("お釣り", $"¥{change:N0}"));
         sb.AppendLine("ありがとうお越し下さいました");
 
         var desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         File.WriteAllText(Path.Combine(desktop, $"receipt_{trxId}.txt"), sb.ToString());
 
+        foreach (var item in CartItems)
+            item.PropertyChanged -= OnCartItemPropertyChanged;
         CartItems.Clear();
         ReceivedAmount = 0;
         RefreshTotals();
@@ -146,6 +150,12 @@ public partial class MainViewModel : ObservableObject
     partial void OnReceivedAmountChanged(decimal value)
     {
         OnPropertyChanged(nameof(Change));
+    }
+
+    private void OnCartItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CartItemViewModel.Quantity))
+            RefreshTotals();
     }
 
     private void RefreshTotals()
@@ -203,8 +213,11 @@ public partial class CartItemViewModel : ObservableObject
 
     public decimal LineTotal => UnitPrice * Quantity;
 
+    public decimal LineTotalWithTax => Math.Floor(LineTotal * (1 + TaxRate / 100m));
+
     partial void OnQuantityChanged(int value)
     {
         OnPropertyChanged(nameof(LineTotal));
+        OnPropertyChanged(nameof(LineTotalWithTax));
     }
 }

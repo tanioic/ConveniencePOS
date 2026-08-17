@@ -33,7 +33,9 @@
 
 ### 4-2. ViewModel (`MainViewModel.cs`) (完了)
 - `CartItemViewModel.TaxRate` (int): カート内商品の税率を保持するプロパティを追加。
-- `AddItemAsync`: 商品追加時に `product.TaxRate` を `CartItemViewModel.TaxRate` に設定。
+- `CartItemViewModel.LineTotalWithTax` (decimal): 税込小計。`Math.Floor(UnitPrice × Quantity × (1 + TaxRate / 100))` で計算。数量変更時に再計算される。
+- `AddItemAsync`: 商品追加時に `product.TaxRate` を `CartItemViewModel.TaxRate` に設定。新規商品は `PropertyChanged` イベントを `MainViewModel` に登録する。
+- `OnCartItemPropertyChanged`: `CartItemViewModel.Quantity` 変更時に `RefreshTotals()` を呼び、合計金額をリアルタイムに再計算する。
 - 税率別集計プロパティ:
   - `TaxableAmount8`: 税率8%商品のLineTotal合算額
   - `TaxableAmount10`: 税率10%商品のLineTotal合算額
@@ -41,11 +43,13 @@
   - `TaxAmount10`: `Math.Floor(TaxableAmount10 * 0.10m)` (端数切捨て)
   - `TaxAmount`: `TaxAmount8 + TaxAmount10` (合算消費税)
   - `TotalAmount`: `Subtotal + TaxAmount`
-- `ConfirmTransactionAsync`: 各 `TransactionItem` に `AppliedTaxRate = i.TaxRate` を設定して保存。
+- `ConfirmTransactionAsync`: 各 `TransactionItem` に `AppliedTaxRate = i.TaxRate` を設定して保存。保存前に全カートアイテムの `PropertyChanged` イベントを解除し、カートをクリアする。
 - `RefreshTotals`: 追加した全プロパティの `OnPropertyChanged` を通知。
 
 ### 4-3. UI (`MainWindow.xaml`) (完了)
 - **DataGrid**: 「税率」カラムを追加。バインディング: `{Binding TaxRate, StringFormat='{}{0}%'}`
+- **DataGrid 数量カラム**: `DataGridTemplateColumn` で実装し、通常時は `TextBlock` 表示、編集時は `TextBox` 表示に切り替わり数量を直接変更可能とする。バーコードスキャン後にデフォルトで「1」が設定される。
+- **DataGrid 小計カラム**: 税込金額 (`LineTotalWithTax`) を表示。`Math.Floor(UnitPrice × Quantity × (1 + TaxRate / 100))` で計算。
 - **右パレット（お会計エリア）**:
   - Row1: 小計 (Subtotal)
   - Row2: 8%対象額 (TaxableAmount8)

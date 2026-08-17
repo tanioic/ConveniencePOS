@@ -122,7 +122,6 @@
             <Border Grid.Row="1" Background="White" CornerRadius="8"
                     BorderBrush="#DDD" BorderThickness="1">
                 <DataGrid AutoGenerateColumns="False"
-                          IsReadOnly="True"
                           ItemsSource="{Binding CartItems}"
                           GridLinesVisibility="None"
                           HeadersVisibility="Column"
@@ -162,15 +161,25 @@
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
-                        <DataGridTextColumn Header="数量" Binding="{Binding Quantity}" Width="80">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="FontSize" Value="15"/>
-                                    <Setter Property="TextAlignment" Value="Center"/>
-                                    <Setter Property="VerticalAlignment" Value="Center"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
+                        <DataGridTemplateColumn Header="数量" Width="80">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Quantity}"
+                                               FontSize="15"
+                                               TextAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                            <DataGridTemplateColumn.CellEditingTemplate>
+                                <DataTemplate>
+                                    <TextBox Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}"
+                                             FontSize="15"
+                                             TextAlignment="Center"
+                                             VerticalContentAlignment="Center"
+                                             MaxLength="4"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellEditingTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTextColumn Header="単価" Binding="{Binding UnitPrice, StringFormat='¥{0:N0}'}" Width="100">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
@@ -180,7 +189,7 @@
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
-                        <DataGridTextColumn Header="小計" Binding="{Binding LineTotal, StringFormat='¥{0:N0}'}" Width="110">
+                        <DataGridTextColumn Header="小計" Binding="{Binding LineTotalWithTax, StringFormat='¥{0:N0}'}" Width="110">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="FontSize" Value="15"/>
