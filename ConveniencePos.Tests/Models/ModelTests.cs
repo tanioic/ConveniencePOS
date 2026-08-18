@@ -6,180 +6,174 @@ namespace ConveniencePos.Tests.Models;
 public class ProductTests
 {
     [Fact]
-    public void Product_DefaultValues_AreInitializedCorrectly()
+    public void DefaultJanCode_IsEmpty()
     {
         var product = new Product();
-
-        Assert.Equal(0, product.Id);
         Assert.Equal(string.Empty, product.JanCode);
-        Assert.Equal(string.Empty, product.Name);
-        Assert.Equal(0m, product.Price);
-        Assert.Equal(0, product.TaxRate);
     }
 
     [Fact]
-    public void Product_SetProperties_ReturnsCorrectValues()
+    public void DefaultName_IsEmpty()
     {
-        var product = new Product
-        {
-            Id = 1,
-            JanCode = "777777",
-            Name = "おにぎり 梅",
-            Price = 120m,
-            TaxRate = 8
-        };
+        var product = new Product();
+        Assert.Equal(string.Empty, product.Name);
+    }
 
-        Assert.Equal(1, product.Id);
+    [Fact]
+    public void SetProperty_Id()
+    {
+        var product = new Product { Id = 5 };
+        Assert.Equal(5, product.Id);
+    }
+
+    [Fact]
+    public void SetProperty_JanCode()
+    {
+        var product = new Product { JanCode = "777777" };
         Assert.Equal("777777", product.JanCode);
+    }
+
+    [Fact]
+    public void SetProperty_Name()
+    {
+        var product = new Product { Name = "おにぎり 梅" };
         Assert.Equal("おにぎり 梅", product.Name);
+    }
+
+    [Fact]
+    public void SetProperty_Price()
+    {
+        var product = new Product { Price = 120m };
         Assert.Equal(120m, product.Price);
+    }
+
+    [Fact]
+    public void SetProperty_TaxRate()
+    {
+        var product = new Product { TaxRate = 8 };
         Assert.Equal(8, product.TaxRate);
     }
 
     [Fact]
-    public void Product_TaxRate10_IsValid()
+    public void TaxRate_CanBe10()
     {
         var product = new Product { TaxRate = 10 };
-
         Assert.Equal(10, product.TaxRate);
     }
 
     [Fact]
-    public void Product_Price_CanBeDecimal()
+    public void Price_CanBeZero()
     {
-        var product = new Product { Price = 199.99m };
-
-        Assert.Equal(199.99m, product.Price);
+        var product = new Product { Price = 0m };
+        Assert.Equal(0m, product.Price);
     }
 
     [Fact]
-    public void Product_JanCode_CanBeEmpty()
+    public void AllProperties_CanBeSetTogether()
     {
-        var product = new Product { JanCode = "" };
+        var product = new Product
+        {
+            Id = 1,
+            JanCode = "999999",
+            Name = "テスト商品",
+            Price = 250m,
+            TaxRate = 10
+        };
 
-        Assert.Equal(string.Empty, product.JanCode);
+        Assert.Equal(1, product.Id);
+        Assert.Equal("999999", product.JanCode);
+        Assert.Equal("テスト商品", product.Name);
+        Assert.Equal(250m, product.Price);
+        Assert.Equal(10, product.TaxRate);
     }
 }
 
 public class TransactionTests
 {
     [Fact]
-    public void Transaction_DefaultValues_AreInitializedCorrectly()
+    public void DefaultItems_IsEmptyList()
     {
         var transaction = new Transaction();
-
-        Assert.Equal(0, transaction.Id);
-        Assert.Equal(default(DateTime), transaction.CreatedAt);
-        Assert.Equal(0m, transaction.TotalAmount);
-        Assert.Equal(0m, transaction.TaxAmount);
         Assert.NotNull(transaction.Items);
         Assert.Empty(transaction.Items);
     }
 
     [Fact]
-    public void Transaction_Items_IsEmptyListByDefault()
+    public void SetProperty_CreatedAt()
     {
-        var transaction = new Transaction();
-
-        Assert.IsType<List<TransactionItem>>(transaction.Items);
-        Assert.Empty(transaction.Items);
-    }
-
-    [Fact]
-    public void Transaction_SetProperties_ReturnsCorrectValues()
-    {
-        var now = DateTime.Now;
-        var transaction = new Transaction
-        {
-            Id = 100,
-            CreatedAt = now,
-            TotalAmount = 669m,
-            TaxAmount = 59m
-        };
-
-        Assert.Equal(100, transaction.Id);
+        var now = DateTime.UtcNow;
+        var transaction = new Transaction { CreatedAt = now };
         Assert.Equal(now, transaction.CreatedAt);
-        Assert.Equal(669m, transaction.TotalAmount);
-        Assert.Equal(59m, transaction.TaxAmount);
     }
 
     [Fact]
-    public void Transaction_CanAddItems()
+    public void SetProperty_TotalAmount()
     {
-        var transaction = new Transaction();
-        var item = new TransactionItem
-        {
-            TransactionId = 1,
-            ProductId = 1,
-            Quantity = 2,
-            UnitPrice = 120m,
-            AppliedTaxRate = 8
-        };
+        var transaction = new Transaction { TotalAmount = 327m };
+        Assert.Equal(327m, transaction.TotalAmount);
+    }
 
-        transaction.Items.Add(item);
-
-        Assert.Single(transaction.Items);
-        Assert.Equal(120m, transaction.Items.First().UnitPrice);
+    [Fact]
+    public void SetProperty_TaxAmount()
+    {
+        var transaction = new Transaction { TaxAmount = 27m };
+        Assert.Equal(27m, transaction.TaxAmount);
     }
 }
 
 public class TransactionItemTests
 {
     [Fact]
-    public void TransactionItem_DefaultValues_AreCorrect()
+    public void SetProperty_TransactionId()
     {
-        var item = new TransactionItem();
-
-        Assert.Equal(0, item.Id);
-        Assert.Equal(0, item.TransactionId);
-        Assert.Equal(0, item.ProductId);
-        Assert.Equal(0, item.Quantity);
-        Assert.Equal(0m, item.UnitPrice);
-        Assert.Equal(0, item.AppliedTaxRate);
+        var item = new TransactionItem { TransactionId = 1 };
+        Assert.Equal(1, item.TransactionId);
     }
 
     [Fact]
-    public void TransactionItem_SetProperties_ReturnsCorrectValues()
+    public void SetProperty_ProductId()
     {
-        var item = new TransactionItem
-        {
-            Id = 10,
-            TransactionId = 100,
-            ProductId = 5,
-            Quantity = 3,
-            UnitPrice = 150m,
-            AppliedTaxRate = 10
-        };
+        var item = new TransactionItem { ProductId = 3 };
+        Assert.Equal(3, item.ProductId);
+    }
 
-        Assert.Equal(10, item.Id);
-        Assert.Equal(100, item.TransactionId);
-        Assert.Equal(5, item.ProductId);
-        Assert.Equal(3, item.Quantity);
-        Assert.Equal(150m, item.UnitPrice);
+    [Fact]
+    public void SetProperty_Quantity()
+    {
+        var item = new TransactionItem { Quantity = 5 };
+        Assert.Equal(5, item.Quantity);
+    }
+
+    [Fact]
+    public void SetProperty_UnitPrice()
+    {
+        var item = new TransactionItem { UnitPrice = 180m };
+        Assert.Equal(180m, item.UnitPrice);
+    }
+
+    [Fact]
+    public void SetProperty_AppliedTaxRate()
+    {
+        var item = new TransactionItem { AppliedTaxRate = 10 };
         Assert.Equal(10, item.AppliedTaxRate);
     }
 
     [Fact]
-    public void TransactionItem_Quantity_CanBeZero()
+    public void AllProperties_CanBeSetTogether()
     {
-        var item = new TransactionItem { Quantity = 0 };
+        var item = new TransactionItem
+        {
+            TransactionId = 1,
+            ProductId = 3,
+            Quantity = 2,
+            UnitPrice = 180m,
+            AppliedTaxRate = 10
+        };
 
-        Assert.Equal(0, item.Quantity);
-    }
-
-    [Fact]
-    public void TransactionItem_TaxRate8_IsReducedRate()
-    {
-        var item = new TransactionItem { AppliedTaxRate = 8 };
-
-        Assert.Equal(8, item.AppliedTaxRate);
-    }
-
-    [Fact]
-    public void TransactionItem_TaxRate10_IsStandardRate()
-    {
-        var item = new TransactionItem { AppliedTaxRate = 10 };
-
+        Assert.Equal(1, item.TransactionId);
+        Assert.Equal(3, item.ProductId);
+        Assert.Equal(2, item.Quantity);
+        Assert.Equal(180m, item.UnitPrice);
         Assert.Equal(10, item.AppliedTaxRate);
     }
 }

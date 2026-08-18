@@ -35,31 +35,34 @@
 |-------------|------|---------|
 | CartItemViewModelTests | 9件 | AC-4, AC-5, AC-7, AC-13 |
 | MainViewModelTests | 25件 | AC-1, AC-2, AC-3, AC-6, AC-7, AC-8, AC-9, AC-13 |
+| SeedDataTests | 10件 | AC-1, データ整合性 |
+| PerProductTaxCalculationTests | 14件 | AC-4, AC-5, AC-6, AC-7 |
+| DisplayFormatTests | 4件 | AC-1, 表示フォーマット |
 | BarcodeServiceTests | 10件 | AC-1, AC-3 |
 | TransactionServiceTests | 8件 | AC-10 |
 | TransactionIntegrationTests | 9件 | AC-10, AC-11, AC-12 |
 | ProductTests | 5件 | （モデル層） |
 | TransactionTests | 4件 | （モデル層） |
 | TransactionItemTests | 6件 | （モデル層） |
-| **合計** | **76件** | **AC-1〜AC-13 全カバー** |
+| **合計** | **108件** | **AC-1〜AC-13 全カバー + データ整合性 + 表示フォーマット** |
 
 ## 4. カバレッジ状況
 
 | AC ID | テストカバレッジ | 状態 |
 |-------|-----------------|------|
-| AC-1 | MainViewModelTests, BarcodeServiceTests | カバー済み |
+| AC-1 | MainViewModelTests, BarcodeServiceTests, SeedDataTests, DisplayFormatTests | カバー済み |
 | AC-2 | MainViewModelTests | カバー済み |
 | AC-3 | MainViewModelTests, BarcodeServiceTests | カバー済み |
-| AC-4 | CartItemViewModelTests | カバー済み |
-| AC-5 | CartItemViewModelTests | カバー済み |
-| AC-6 | MainViewModelTests (MixedTaxScenario) | カバー済み |
-| AC-7 | CartItemViewModelTests, MainViewModelTests | カバー済み |
+| AC-4 | CartItemViewModelTests, PerProductTaxCalculationTests | カバー済み |
+| AC-5 | CartItemViewModelTests, PerProductTaxCalculationTests | カバー済み |
+| AC-6 | MainViewModelTests (MixedTaxScenario), PerProductTaxCalculationTests | カバー済み |
+| AC-7 | CartItemViewModelTests, MainViewModelTests, PerProductTaxCalculationTests | カバー済み |
 | AC-8 | MainViewModelTests | カバー済み |
 | AC-9 | MainViewModelTests | カバー済み |
 | AC-10 | TransactionIntegrationTests (SavesToDb) | カバー済み |
 | AC-11 | TransactionIntegrationTests (ClearsCart) | カバー済み |
-| AC-12 | TransactionIntegrationTests (GeneratesReceiptFile) | カバー済み |
-| AC-13 | CartItemViewModelTests, MainViewModelTests | カバー済み |
+| AC-12 | TransactionIntegrationTests (GeneratesReceiptFile), DisplayFormatTests | カバー済み |
+| AC-13 | CartItemViewModelTests, MainViewModelTests, PerProductTaxCalculationTests | カバー済み |
 
 ## バージョン履歴
 

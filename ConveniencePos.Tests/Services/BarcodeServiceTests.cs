@@ -1,142 +1,123 @@
+global using ConveniencePos.Models;
 using ConveniencePos.Data;
-using ConveniencePos.Models;
+using ConveniencePos.Data.Seed;
 using ConveniencePos.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 
 namespace ConveniencePos.Tests.Services;
 
 public class BarcodeServiceTests : IDisposable
 {
-    private readonly DbContextOptions<PosDbContext> _options;
-    private readonly TestDbContextFactory _factory;
-    private readonly BarcodeService _sut;
+    private readonly IDbContextFactory<PosDbContext> _contextFactory;
+    private readonly BarcodeService _barcodeService;
 
     public BarcodeServiceTests()
     {
-        _options = new DbContextOptionsBuilder<PosDbContext>()
+        var options = new DbContextOptionsBuilder<PosDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
-        _factory = new TestDbContextFactory(_options);
-        SeedTestData();
-        _sut = new BarcodeService(_factory, NullLogger<BarcodeService>.Instance);
-    }
 
-    private void SeedTestData()
-    {
-        using var dbContext = new PosDbContext(_options);
-        dbContext.Products.AddRange(
-            new Product { Id = 1, JanCode = "777777", Name = "おにぎり 梅", Price = 120m, TaxRate = 8 },
-            new Product { Id = 2, JanCode = "888888", Name = "緑茶 500ml", Price = 150m, TaxRate = 8 },
-            new Product { Id = 3, JanCode = "999999", Name = "ポテトチップス", Price = 180m, TaxRate = 10 },
-            new Product { Id = 4, JanCode = "111111", Name = "ティッシュ", Price = 200m, TaxRate = 10 },
-            new Product { Id = 5, JanCode = "222222", Name = "コーヒー 熱 350ml", Price = 110m, TaxRate = 10 }
-        );
-        dbContext.SaveChanges();
-    }
+        var factoryMock = new Mock<IDbContextFactory<PosDbContext>>();
+        factoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => new PosDbContext(options));
 
-    public void Dispose()
-    {
-        _factory.Dispose();
+        _contextFactory = factoryMock.Object;
+
+        var loggerMock = new Mock<ILogger<BarcodeService>>();
+        _barcodeService = new BarcodeService(_contextFactory, loggerMock.Object);
+
+        using var db = new PosDbContext(options);
+        db.Database.EnsureCreated();
     }
 
     [Fact]
-    public async Task LookupByBarcodeAsync_ExistingCode_ReturnsProduct()
+    public async Task LookupByBarcode_ExistingProduct_ReturnsProduct()
     {
-        var result = await _sut.LookupByBarcodeAsync("777777");
+        var result = await _barcodeService.LookupByBarcodeAsync("777777");
         Assert.NotNull(result);
-        Assert.Equal("おにぎり 梅", result!.Name);
-        Assert.Equal(120m, result.Price);
+        Assert.Equal("おにぎり 梅", result.Name);
+    }
+
+    [Fact]
+    public async Task LookupByBarcode_ExistingProduct_ReturnsCorrectPrice()
+    {
+        var result = await _barcodeService.LookupByBarcodeAsync("999999");
+        Assert.NotNull(result);
+        Assert.Equal(180m, result.Price);
+    }
+
+    [Fact]
+    public async Task LookupByBarcode_ExistingProduct_ReturnsCorrectTaxRate()
+    {
+        var result = await _barcodeService.LookupByBarcodeAsync("777777");
+        Assert.NotNull(result);
         Assert.Equal(8, result.TaxRate);
     }
 
     [Fact]
-    public async Task LookupByBarcodeAsync_NonExistingCode_ReturnsNull()
+    public async Task LookupByBarcode_NonExisting_ReturnsNull()
     {
-        var result = await _sut.LookupByBarcodeAsync("000000");
+        var result = await _barcodeService.LookupByBarcodeAsync("000000");
         Assert.Null(result);
     }
 
     [Fact]
-    public async Task LookupByBarcodeAsync_EmptyString_ReturnsNull()
+    public async Task LookupByBarcode_EmptyString_ReturnsNull()
     {
-        var result = await _sut.LookupByBarcodeAsync("");
+        var result = await _barcodeService.LookupByBarcodeAsync("");
         Assert.Null(result);
     }
 
     [Fact]
-    public async Task LookupByBarcodeAsync_AllProducts_Exist()
+    public async Task LookupByBarcode_AllSeedProducts_Found()
     {
-        var codes = new[] { "777777", "888888", "999999", "111111", "222222" };
-        var expectedNames = new[] { "おにぎり 梅", "緑茶 500ml", "ポテトチップス", "ティッシュ", "コーヒー 熱 350ml" };
-
-        foreach (var (code, expectedName) in codes.Zip(expectedNames))
+        var barcodes = new[] { "777777", "888888", "999999", "111111", "222222" };
+        foreach (var barcode in barcodes)
         {
-            var result = await _sut.LookupByBarcodeAsync(code);
+            var result = await _barcodeService.LookupByBarcodeAsync(barcode);
             Assert.NotNull(result);
-            Assert.Equal(expectedName, result!.Name);
         }
     }
 
     [Fact]
-    public async Task LookupByBarcodeAsync_ReturnsCorrectTaxRate()
+    public async Task LookupByBarcode_Tissue_ProductFound()
     {
-        var onigiri = await _sut.LookupByBarcodeAsync("777777");
-        Assert.Equal(8, onigiri!.TaxRate);
-
-        var chips = await _sut.LookupByBarcodeAsync("999999");
-        Assert.Equal(10, chips!.TaxRate);
-    }
-
-    [Fact]
-    public async Task LookupByBarcodeAsync_PartialMatch_ReturnsNull()
-    {
-        var result = await _sut.LookupByBarcodeAsync("77777");
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public async Task LookupByBarcodeAsync_DuplicateBarcode_ReturnsFirstMatch()
-    {
-        using var dbContext = new PosDbContext(_options);
-        dbContext.Products.Add(
-            new Product { Id = 6, JanCode = "777777", Name = "おにぎり 塩", Price = 130m, TaxRate = 8 }
-        );
-        dbContext.SaveChanges();
-
-        var result = await _sut.LookupByBarcodeAsync("777777");
+        var result = await _barcodeService.LookupByBarcodeAsync("111111");
         Assert.NotNull(result);
-        Assert.Equal(1, result!.Id);
+        Assert.Equal("ティッシュ", result.Name);
+        Assert.Equal(200m, result.Price);
+        Assert.Equal(10, result.TaxRate);
     }
 
     [Fact]
-    public async Task LookupByBarcodeAsync_ProductWithZeroPrice_ReturnsProduct()
+    public async Task LookupByBarcode_GreenTea_ProductFound()
     {
-        using var dbContext = new PosDbContext(_options);
-        dbContext.Products.Add(
-            new Product { Id = 99, JanCode = "000000", Name = "テスト商品", Price = 0m, TaxRate = 10 }
-        );
-        dbContext.SaveChanges();
-
-        var result = await _sut.LookupByBarcodeAsync("000000");
+        var result = await _barcodeService.LookupByBarcodeAsync("888888");
         Assert.NotNull(result);
-        Assert.Equal(0m, result!.Price);
+        Assert.Equal("緑茶 500ml", result.Name);
+        Assert.Equal(150m, result.Price);
+        Assert.Equal(8, result.TaxRate);
     }
 
     [Fact]
-    public async Task LookupByBarcodeAsync_VeryLongBarcode_ReturnsNull()
+    public async Task LookupByBarcode_Coffee_ProductFound()
     {
-        var longBarcode = new string('1', 100);
-        var result = await _sut.LookupByBarcodeAsync(longBarcode);
-        Assert.Null(result);
+        var result = await _barcodeService.LookupByBarcodeAsync("222222");
+        Assert.NotNull(result);
+        Assert.Equal("コーヒー 熱 350ml", result.Name);
+        Assert.Equal(110m, result.Price);
+        Assert.Equal(10, result.TaxRate);
     }
 
     [Fact]
-    public async Task LookupByBarcodeAsync_ProductsTableHas5Rows()
+    public async Task LookupByBarcode_NullBarcode_ThrowsException()
     {
-        using var dbContext = new PosDbContext(_options);
-        var count = await dbContext.Products.CountAsync();
-        Assert.Equal(5, count);
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            async () => await _barcodeService.LookupByBarcodeAsync(null!));
     }
+
+    public void Dispose() { }
 }

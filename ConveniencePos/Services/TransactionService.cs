@@ -5,25 +5,17 @@ using Microsoft.Extensions.Logging;
 
 namespace ConveniencePos.Services;
 
-/// <summary>
-/// 取引保存を行うサービスの実装。
-/// IDbContextFactory を使用して各操作ごとに短寿命の DbContext を生成する。
-/// </summary>
 public class TransactionService : ITransactionService
 {
     private readonly IDbContextFactory<PosDbContext> _contextFactory;
     private readonly ILogger<TransactionService> _logger;
 
-    /// <summary>
-    /// コンストラクタ。DIコンテナからファクトリとロガーを受け取る。
-    /// </summary>
     public TransactionService(IDbContextFactory<PosDbContext> contextFactory, ILogger<TransactionService> logger)
     {
         _contextFactory = contextFactory;
         _logger = logger;
     }
 
-    /// <inheritdoc/>
     public async Task<Transaction> SaveTransactionAsync(
         decimal totalAmount,
         decimal taxAmount,

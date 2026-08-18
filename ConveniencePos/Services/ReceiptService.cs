@@ -1,13 +1,10 @@
 using System.IO;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ConveniencePos.Services;
 
-/// <summary>
-/// レシート生成・保存を行うサービスの実装。
-/// 固定幅32文字のテキストレシートを生成し、ファイルに非同期保存する。
-/// </summary>
 public class ReceiptService : IReceiptService
 {
     private readonly string _storeName;
@@ -17,15 +14,6 @@ public class ReceiptService : IReceiptService
     private readonly int _width;
     private readonly ILogger<ReceiptService> _logger;
 
-    /// <summary>
-    /// コンストラクタ。
-    /// </summary>
-    /// <param name="storeName">店舗名。</param>
-    /// <param name="registerNumber">レジ番号。</param>
-    /// <param name="operatorName">担当者名。</param>
-    /// <param name="outputDirectory">レシート出力ディレクトリ。"Desktop" を指定するとデスクトップフォルダを使用する。</param>
-    /// <param name="width">レシートの幅（文字数）。</param>
-    /// <param name="logger">ロガー。</param>
     public ReceiptService(
         string storeName = "Convenience POS Store",
         string registerNumber = "レジ#01",
@@ -44,10 +32,9 @@ public class ReceiptService : IReceiptService
         _operatorName = operatorName;
         _outputDirectory = outputDirectory;
         _width = width;
-        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<ReceiptService>.Instance;
+        _logger = logger ?? NullLogger<ReceiptService>.Instance;
     }
 
-    /// <inheritdoc/>
     public string GenerateReceipt(ReceiptContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -76,7 +63,6 @@ public class ReceiptService : IReceiptService
         return sb.ToString();
     }
 
-    /// <inheritdoc/>
     public async Task SaveReceiptAsync(int transactionId, string receiptContent, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNullOrWhiteSpace(receiptContent);
@@ -89,18 +75,12 @@ public class ReceiptService : IReceiptService
         _logger.LogDebug("レシートを保存しました: {FilePath}", filePath);
     }
 
-    /// <summary>
-    /// 出力ディレクトリパスを解決する。
-    /// </summary>
     private string ResolveOutputDirectory() => _outputDirectory switch
     {
         "Desktop" => Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
         _ => _outputDirectory
     };
 
-    /// <summary>
-    /// 文字列の表示幅を計算する。全角文字は2幅としてカウントする。
-    /// </summary>
     private int DisplayWidth(string s)
     {
         int width = 0;
@@ -115,18 +95,12 @@ public class ReceiptService : IReceiptService
         return width;
     }
 
-    /// <summary>
-    /// 文列列を指定幅で中央揃えする。
-    /// </summary>
     private string CenterText(string text, int totalWidth)
     {
         int pad = Math.Max(0, (totalWidth - DisplayWidth(text)) / 2);
         return new string(' ', pad) + text;
     }
 
-    /// <summary>
-    /// 金額行のラベルと金額を右寄せで結合する。
-    /// </summary>
     private string AmountLine(string label, string amount)
     {
         int spaces = _width - DisplayWidth(label) - DisplayWidth(amount);

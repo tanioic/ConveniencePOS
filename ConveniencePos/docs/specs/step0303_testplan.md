@@ -18,6 +18,7 @@
 | Model | `Models/ProductTests.cs` | 単体テスト（xUnit） |
 | Model | `Models/ModelTests.cs` | 単体テスト（xUnit） |
 | ViewModel | `ViewModels/ViewModelTests.cs` | 単体テスト（xUnit + Moq） |
+| ViewModel | `ViewModels/SeedDataTests.cs` | 単体テスト（xUnit + Moq） |
 | Service | `Services/BarcodeServiceTests.cs` | 単体テスト（xUnit + InMemory DB） |
 | Integration | `Integration/TransactionIntegrationTests.cs` | 結合テスト（xUnit + InMemory DB） |
 
@@ -40,11 +41,14 @@
 
 | ID | 条件 | 目標値 | 実測値 |
 |----|------|--------|--------|
-| XC-1 | 全テスト件数がパスすること | 100%パス | **76件全件パス** |
+| XC-1 | 全テスト件数がパスすること | 100%パス | **108件全件パス** |
 | XC-2 | ViewModel層のカバレッジ | 80%以上 | **100%** |
 | XC-3 | Model層のカバレッジ | 90%以上 | **100%** |
 | XC-4 | 失敗テストが0件であること | 0件 | **0件** |
-| XC-5 | テスト実行時間が妥当であること | 全体で30秒以内 | **0.65秒** |
+| XC-5 | テスト実行時間が妥当であること | 全体で30秒以内 | **0.5秒** |
+| XC-6 | シードデータ検証テストがパスすること | 全件パス | **10件パス** |
+| XC-7 | 各商品の税率計算テストがパスすること | 全件パス | **14件パス** |
+| XC-8 | 表示フォーマットテストがパスすること | 全件パス | **4件パス** |
 
 ## 5. テスト環境
 

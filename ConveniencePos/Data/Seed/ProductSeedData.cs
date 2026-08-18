@@ -2,15 +2,8 @@ using ConveniencePos.Models;
 
 namespace ConveniencePos.Data.Seed;
 
-/// <summary>
-/// テスト用の商品マスタデータ。
-/// MVP検証用に5商品を定義する。
-/// </summary>
 public static class ProductSeedData
 {
-    /// <summary>
-    /// シードデータとして挿入する商品一覧を返す。
-    /// </summary>
     public static Product[] GetProducts() =>
     [
         new Product

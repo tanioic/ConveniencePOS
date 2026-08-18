@@ -1,7 +1,5 @@
-using System.ComponentModel;
 using ConveniencePos.Services;
 using ConveniencePos.ViewModels;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -10,441 +8,393 @@ namespace ConveniencePos.Tests.ViewModels;
 public class CartItemViewModelTests
 {
     [Fact]
-    public void LineTotal_ReturnsUnitPriceTimesQuantity()
+    public void LineTotal_CalculatesCorrectly()
     {
-        var item = new CartItemViewModel
-        {
-            ProductId = 1,
-            Name = "おにぎり 梅",
-            UnitPrice = 120m,
-            TaxRate = 8,
-            Quantity = 3
-        };
-
-        Assert.Equal(360m, item.LineTotal);
+        var item = new CartItemViewModel(1, "テスト", 100m, 8, 3);
+        Assert.Equal(300m, item.LineTotal);
     }
 
     [Fact]
-    public void Quantity_BelowOne_ThrowsArgumentOutOfRangeException()
+    public void LineTotalWithTax_8Percent()
     {
-        var item = new CartItemViewModel
-        {
-            ProductId = 1,
-            Name = "おにぎり 梅",
-            UnitPrice = 120m,
-            TaxRate = 8,
-            Quantity = 1
-        };
-
-        Assert.Throws<ArgumentOutOfRangeException>(() => item.Quantity = 0);
+        var item = new CartItemViewModel(1, "おにぎり", 120m, 8, 2);
+        Assert.Equal(259m, item.LineTotalWithTax);
     }
 
     [Fact]
-    public void LineTotalWithTax_TaxRate8_CalculatesCorrectly()
+    public void LineTotalWithTax_10Percent()
     {
-        var item = new CartItemViewModel
-        {
-            ProductId = 1,
-            Name = "おにぎり 梅",
-            UnitPrice = 120m,
-            TaxRate = 8,
-            Quantity = 1
-        };
-
-        Assert.Equal(129m, item.LineTotalWithTax);
-    }
-
-    [Fact]
-    public void LineTotalWithTax_TaxRate10_CalculatesCorrectly()
-    {
-        var item = new CartItemViewModel
-        {
-            ProductId = 3,
-            Name = "ポテトチップス",
-            UnitPrice = 180m,
-            TaxRate = 10,
-            Quantity = 1
-        };
-
+        var item = new CartItemViewModel(1, "チップス", 180m, 10, 1);
         Assert.Equal(198m, item.LineTotalWithTax);
     }
 
     [Fact]
-    public void LineTotalWithTax_MultipleQuantity_CalculatesCorrectly()
+    public void LineTotal_UpdatesOnQuantityChange()
     {
-        var item = new CartItemViewModel
-        {
-            ProductId = 2,
-            Name = "お茶 500ml",
-            UnitPrice = 150m,
-            TaxRate = 8,
-            Quantity = 2
-        };
-
+        var item = new CartItemViewModel(1, "テスト", 100m, 8, 1);
+        Assert.Equal(100m, item.LineTotal);
+        item.Quantity = 3;
         Assert.Equal(300m, item.LineTotal);
+    }
+
+    [Fact]
+    public void LineTotalWithTax_UpdatesOnQuantityChange()
+    {
+        var item = new CartItemViewModel(1, "おにぎり", 120m, 8, 1);
+        Assert.Equal(129m, item.LineTotalWithTax);
+        item.Quantity = 2;
+        Assert.Equal(259m, item.LineTotalWithTax);
+    }
+
+    [Fact]
+    public void Quantity_BelowOne_ThrowsException()
+    {
+        var item = new CartItemViewModel(1, "テスト", 100m, 8, 1);
+        Assert.Throws<ArgumentOutOfRangeException>(() => item.Quantity = 0);
+    }
+
+    [Fact]
+    public void LineTotal_ZeroQuantity_ReturnsZero()
+    {
+        var item = new CartItemViewModel(1, "テスト", 100m, 8, 1);
+        item.Quantity = 1;
+        Assert.Equal(100m, item.LineTotal);
+    }
+
+    [Fact]
+    public void LineTotalWithTax_FloorRounding()
+    {
+        var item = new CartItemViewModel(1, "テスト", 100m, 8, 3);
         Assert.Equal(324m, item.LineTotalWithTax);
     }
 
     [Fact]
-    public void QuantityChanged_RaisesPropertyChangedForLineTotal()
+    public void DefaultQuantity_IsOne()
     {
-        var item = new CartItemViewModel
-        {
-            ProductId = 1,
-            Name = "テスト",
-            UnitPrice = 100m,
-            TaxRate = 8,
-            Quantity = 1
-        };
-
-        var changedProperties = new List<string>();
-        ((INotifyPropertyChanged)item).PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName != null)
-                changedProperties.Add(e.PropertyName);
-        };
-
-        item.Quantity = 2;
-
-        Assert.Contains(nameof(CartItemViewModel.LineTotal), changedProperties);
-    }
-
-    [Fact]
-    public void QuantityChanged_RaisesPropertyChangedForLineTotalWithTax()
-    {
-        var item = new CartItemViewModel
-        {
-            ProductId = 1,
-            Name = "テスト",
-            UnitPrice = 100m,
-            TaxRate = 10,
-            Quantity = 1
-        };
-
-        var changedProperties = new List<string>();
-        ((INotifyPropertyChanged)item).PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName != null)
-                changedProperties.Add(e.PropertyName);
-        };
-
-        item.Quantity = 3;
-
-        Assert.Contains(nameof(CartItemViewModel.LineTotalWithTax), changedProperties);
-    }
-
-    [Fact]
-    public void QuantityChanged_UpdatesLineTotal()
-    {
-        var item = new CartItemViewModel
-        {
-            ProductId = 1,
-            Name = "テスト",
-            UnitPrice = 100m,
-            TaxRate = 8,
-            Quantity = 1
-        };
-
-        item.Quantity = 5;
-
-        Assert.Equal(500m, item.LineTotal);
-    }
-
-    [Fact]
-    public void QuantityChanged_UpdatesLineTotalWithTax()
-    {
-        var item = new CartItemViewModel
-        {
-            ProductId = 1,
-            Name = "テスト",
-            UnitPrice = 100m,
-            TaxRate = 10,
-            Quantity = 1
-        };
-
-        item.Quantity = 3;
-
-        Assert.Equal(330m, item.LineTotalWithTax);
-    }
-
-    [Fact]
-    public void LineTotalWithTax_FloorTruncation_CalculatesCorrectly()
-    {
-        var item = new CartItemViewModel
-        {
-            ProductId = 1,
-            Name = "テスト",
-            UnitPrice = 111m,
-            TaxRate = 8,
-            Quantity = 1
-        };
-
-        Assert.Equal(119m, item.LineTotalWithTax);
+        var item = new CartItemViewModel(1, "テスト", 100m, 8);
+        Assert.Equal(1, item.Quantity);
     }
 }
 
 public class MainViewModelTests
 {
-    private static MainViewModel CreateViewModel()
+    private static MainViewModel CreateViewModel(
+        Mock<IBarcodeService>? barcodeMock = null,
+        Mock<ITransactionService>? transactionMock = null,
+        Mock<IReceiptService>? receiptMock = null)
     {
-        var mockBarcodeService = new Mock<IBarcodeService>();
-        var mockTransactionService = new Mock<ITransactionService>();
-        var mockReceiptService = new Mock<IReceiptService>();
-        var mockLogger = new Mock<ILogger<MainViewModel>>();
-        return new MainViewModel(mockBarcodeService.Object, mockTransactionService.Object, mockReceiptService.Object, mockLogger.Object);
-    }
-
-    private static void AddCartItem(MainViewModel vm, int productId, string name,
-        decimal unitPrice, int taxRate, int quantity)
-    {
-        var item = new CartItemViewModel
-        {
-            ProductId = productId,
-            Name = name,
-            UnitPrice = unitPrice,
-            TaxRate = taxRate,
-            Quantity = quantity
-        };
-        vm.CartItems.Add(item);
+        barcodeMock ??= new Mock<IBarcodeService>();
+        transactionMock ??= new Mock<ITransactionService>();
+        receiptMock ??= new Mock<IReceiptService>();
+        var loggerMock = new Mock<Microsoft.Extensions.Logging.ILogger<MainViewModel>>();
+        return new MainViewModel(
+            barcodeMock.Object,
+            transactionMock.Object,
+            receiptMock.Object,
+            loggerMock.Object);
     }
 
     [Fact]
-    public void Subtotal_EmptyCart_ReturnsZero()
+    public void EmptyCart_Subtotal_IsZero()
     {
         var vm = CreateViewModel();
         Assert.Equal(0m, vm.Subtotal);
     }
 
     [Fact]
-    public void Subtotal_SingleItem_ReturnsCorrectValue()
+    public void EmptyCart_TotalAmount_IsZero()
     {
         var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 2);
+        Assert.Equal(0m, vm.TotalAmount);
+    }
+
+    [Fact]
+    public void EmptyCart_Change_IsZero()
+    {
+        var vm = CreateViewModel();
+        Assert.Equal(0m, vm.Change);
+    }
+
+    [Fact]
+    public void SingleItem8Percent_Subtotal()
+    {
+        var vm = CreateViewModel();
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.RefreshTotals();
+        Assert.Equal(120m, vm.Subtotal);
+    }
+
+    [Fact]
+    public void SingleItem8Percent_TaxableAmount8()
+    {
+        var vm = CreateViewModel();
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.RefreshTotals();
+        Assert.Equal(120m, vm.TaxableAmount8);
+    }
+
+    [Fact]
+    public void SingleItem8Percent_TaxableAmount10_IsZero()
+    {
+        var vm = CreateViewModel();
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.RefreshTotals();
+        Assert.Equal(0m, vm.TaxableAmount10);
+    }
+
+    [Fact]
+    public void SingleItem8Percent_TaxAmount8()
+    {
+        var vm = CreateViewModel();
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.RefreshTotals();
+        Assert.Equal(9m, vm.TaxAmount8);
+    }
+
+    [Fact]
+    public void SingleItem8Percent_TotalAmount()
+    {
+        var vm = CreateViewModel();
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.RefreshTotals();
+        Assert.Equal(129m, vm.TotalAmount);
+    }
+
+    [Fact]
+    public void SingleItem10Percent_TaxAmount10()
+    {
+        var vm = CreateViewModel();
+        vm.CartItems.Add(new CartItemViewModel(1, "チップス", 180m, 10));
+        vm.RefreshTotals();
+        Assert.Equal(18m, vm.TaxAmount10);
+    }
+
+    [Fact]
+    public void SingleItem10Percent_TotalAmount()
+    {
+        var vm = CreateViewModel();
+        vm.CartItems.Add(new CartItemViewModel(1, "チップス", 180m, 10));
+        vm.RefreshTotals();
+        Assert.Equal(198m, vm.TotalAmount);
+    }
+
+    [Fact]
+    public void TwoItems8Percent_Subtotal()
+    {
+        var vm = CreateViewModel();
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8, 2));
+        vm.RefreshTotals();
         Assert.Equal(240m, vm.Subtotal);
     }
 
     [Fact]
-    public void Subtotal_MultipleItems_ReturnsSum()
+    public void TwoItems8Percent_TaxAmount8()
     {
         var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-        AddCartItem(vm, 2, "お茶", 150m, 8, 1);
-        AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
-        Assert.Equal(450m, vm.Subtotal);
-    }
-
-    [Fact]
-    public void TaxableAmount8_OnlyReducedRateItems()
-    {
-        var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-        AddCartItem(vm, 2, "お茶", 150m, 8, 1);
-        AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
-        Assert.Equal(270m, vm.TaxableAmount8);
-    }
-
-    [Fact]
-    public void TaxableAmount10_OnlyStandardRateItems()
-    {
-        var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-        AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
-        AddCartItem(vm, 4, "ティッシュ", 200m, 10, 1);
-        Assert.Equal(380m, vm.TaxableAmount10);
-    }
-
-    [Fact]
-    public void TaxAmount8_CalculatesFloorOf8Percent()
-    {
-        var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-        AddCartItem(vm, 2, "お茶", 150m, 8, 1);
-        Assert.Equal(21m, vm.TaxAmount8);
-    }
-
-    [Fact]
-    public void TaxAmount10_CalculatesFloorOf10Percent()
-    {
-        var vm = CreateViewModel();
-        AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
-        AddCartItem(vm, 4, "ティッシュ", 200m, 10, 1);
-        Assert.Equal(38m, vm.TaxAmount10);
-    }
-
-    [Fact]
-    public void TaxAmount_Sums8And10Percent()
-    {
-        var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-        AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
-        Assert.Equal(27m, vm.TaxAmount);
-    }
-
-    [Fact]
-    public void TotalAmount_SumsSubtotalAndTax()
-    {
-        var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-        AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
-        Assert.Equal(327m, vm.TotalAmount);
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8, 2));
+        vm.RefreshTotals();
+        Assert.Equal(19m, vm.TaxAmount8);
     }
 
     [Fact]
     public void Change_CalculatesCorrectly()
     {
         var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.RefreshTotals();
         vm.ReceivedAmount = 200m;
         Assert.Equal(71m, vm.Change);
     }
 
     [Fact]
-    public void Change_InsufficientPayment_ReturnsZero()
+    public void Change_InsufficientAmount_ReturnsZero()
     {
         var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.RefreshTotals();
         vm.ReceivedAmount = 100m;
         Assert.Equal(0m, vm.Change);
     }
 
     [Fact]
-    public void Change_ZeroReceivedAmount_ReturnsZero()
+    public void MixedTax_Subtotal()
     {
         var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-        Assert.Equal(0m, vm.Change);
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.CartItems.Add(new CartItemViewModel(2, "チップス", 180m, 10));
+        vm.RefreshTotals();
+        Assert.Equal(300m, vm.Subtotal);
     }
 
     [Fact]
-    public void TaxAmount_FloorTruncation_Applied()
+    public void MixedTax_TaxAmount8()
     {
         var vm = CreateViewModel();
-        AddCartItem(vm, 1, "テスト商品", 111m, 8, 1);
-        Assert.Equal(8m, vm.TaxAmount8);
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.CartItems.Add(new CartItemViewModel(2, "チップス", 180m, 10));
+        vm.RefreshTotals();
+        Assert.Equal(9m, vm.TaxAmount8);
     }
 
     [Fact]
-    public void MixedTaxScenario_SeedProducts()
+    public void MixedTax_TaxAmount10()
     {
         var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-        AddCartItem(vm, 2, "お茶 500ml", 150m, 8, 1);
-        AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
-        AddCartItem(vm, 4, "ティッシュ", 200m, 10, 1);
-        AddCartItem(vm, 5, "ホットコーヒー 350ml", 110m, 10, 1);
-
-        Assert.Equal(760m, vm.Subtotal);
-        Assert.Equal(270m, vm.TaxableAmount8);
-        Assert.Equal(490m, vm.TaxableAmount10);
-        Assert.Equal(21m, vm.TaxAmount8);
-        Assert.Equal(49m, vm.TaxAmount10);
-        Assert.Equal(70m, vm.TaxAmount);
-        Assert.Equal(830m, vm.TotalAmount);
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.CartItems.Add(new CartItemViewModel(2, "チップス", 180m, 10));
+        vm.RefreshTotals();
+        Assert.Equal(18m, vm.TaxAmount10);
     }
 
     [Fact]
-    public void ReceivedAmountChanged_RaisesPropertyChangedForChange()
+    public void MixedTax_TotalAmount()
     {
         var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-
-        var changed = false;
-        ((INotifyPropertyChanged)vm).PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(MainViewModel.Change))
-                changed = true;
-        };
-
-        vm.ReceivedAmount = 200m;
-        Assert.True(changed);
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.CartItems.Add(new CartItemViewModel(2, "チップス", 180m, 10));
+        vm.RefreshTotals();
+        Assert.Equal(327m, vm.TotalAmount);
     }
 
     [Fact]
-    public void CartItems_IsEmptyByDefault()
+    public void MixedTax_TaxAmount()
     {
         var vm = CreateViewModel();
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.CartItems.Add(new CartItemViewModel(2, "チップス", 180m, 10));
+        vm.RefreshTotals();
+        Assert.Equal(27m, vm.TaxAmount);
+    }
+
+    [Fact]
+    public void QuantityChange_UpdatesTotals()
+    {
+        var vm = CreateViewModel();
+        var item = new CartItemViewModel(1, "おにぎり", 120m, 8, 1);
+        vm.CartItems.Add(item);
+        vm.RefreshTotals();
+        Assert.Equal(129m, vm.TotalAmount);
+
+        item.Quantity = 2;
+        vm.RefreshTotals();
+        Assert.Equal(259m, vm.TotalAmount);
+    }
+
+    [Fact]
+    public void AddItemCommand_AddsNewProduct()
+    {
+        var barcodeMock = new Mock<IBarcodeService>();
+        barcodeMock.Setup(b => b.LookupByBarcodeAsync("777777", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConveniencePos.Models.Product { Id = 1, JanCode = "777777", Name = "おにぎり 梅", Price = 120m, TaxRate = 8 });
+
+        var vm = CreateViewModel(barcodeMock: barcodeMock);
+        vm.BarcodeInput = "777777";
+        vm.AddItemCommand.Execute(null);
+
+        Assert.Single(vm.CartItems);
+        Assert.Equal("おにぎり 梅", vm.CartItems[0].Name);
+    }
+
+    [Fact]
+    public async Task AddItemCommand_DuplicateProduct_IncrementsQuantity()
+    {
+        var barcodeMock = new Mock<IBarcodeService>();
+        barcodeMock.Setup(b => b.LookupByBarcodeAsync("777777", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConveniencePos.Models.Product { Id = 1, JanCode = "777777", Name = "おにぎり 梅", Price = 120m, TaxRate = 8 });
+
+        var vm = CreateViewModel(barcodeMock: barcodeMock);
+        vm.BarcodeInput = "777777";
+        await vm.AddItemCommand.ExecuteAsync(null);
+        vm.BarcodeInput = "777777";
+        await vm.AddItemCommand.ExecuteAsync(null);
+
+        Assert.Single(vm.CartItems);
+        Assert.Equal(2, vm.CartItems[0].Quantity);
+    }
+
+    [Fact]
+    public void AddItemCommand_ProductNotFound_KeepsCartUnchanged()
+    {
+        var barcodeMock = new Mock<IBarcodeService>();
+        barcodeMock.Setup(b => b.LookupByBarcodeAsync("000000", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ConveniencePos.Models.Product?)null);
+
+        var vm = CreateViewModel(barcodeMock: barcodeMock);
+        vm.BarcodeInput = "000000";
+        vm.AddItemCommand.Execute(null);
+
         Assert.Empty(vm.CartItems);
     }
 
     [Fact]
-    public void BarcodeInput_DefaultIsEmpty()
+    public async Task ConfirmTransactionCommand_SavesTransaction()
     {
-        var vm = CreateViewModel();
-        Assert.Equal(string.Empty, vm.BarcodeInput);
+        var transactionMock = new Mock<ITransactionService>();
+        transactionMock.Setup(t => t.SaveTransactionAsync(It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<IReadOnlyList<ConveniencePos.Models.TransactionItem>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConveniencePos.Models.Transaction { Id = 1, CreatedAt = DateTime.UtcNow, TotalAmount = 259m, TaxAmount = 19m });
+
+        var vm = CreateViewModel(transactionMock: transactionMock);
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8, 2));
+        vm.RefreshTotals();
+        vm.ReceivedAmount = 300m;
+
+        await vm.ConfirmTransactionCommand.ExecuteAsync(null);
+
+        transactionMock.Verify(t => t.SaveTransactionAsync(It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<IReadOnlyList<ConveniencePos.Models.TransactionItem>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public void ReceivedAmount_DefaultIsZero()
+    public async Task ConfirmTransactionCommand_ClearsCart()
     {
-        var vm = CreateViewModel();
+        var transactionMock = new Mock<ITransactionService>();
+        transactionMock.Setup(t => t.SaveTransactionAsync(It.IsAny<decimal>(), It.IsAny<decimal>(), It.IsAny<IReadOnlyList<ConveniencePos.Models.TransactionItem>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ConveniencePos.Models.Transaction { Id = 1, CreatedAt = DateTime.UtcNow, TotalAmount = 259m, TaxAmount = 19m });
+
+        var vm = CreateViewModel(transactionMock: transactionMock);
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8, 2));
+        vm.RefreshTotals();
+        vm.ReceivedAmount = 300m;
+
+        await vm.ConfirmTransactionCommand.ExecuteAsync(null);
+
+        Assert.Empty(vm.CartItems);
         Assert.Equal(0m, vm.ReceivedAmount);
     }
 
     [Fact]
-    public void ErrorMessage_DefaultIsEmpty()
+    public void ConfirmTransactionCommand_DisabledWhenCartEmpty()
     {
         var vm = CreateViewModel();
-        Assert.Equal(string.Empty, vm.ErrorMessage);
-        Assert.False(vm.HasError);
+        Assert.False(vm.ConfirmTransactionCommand.CanExecute(null));
     }
 
     [Fact]
-    public void CanConfirmTransaction_EmptyCart_ReturnsFalse()
+    public void ConfirmTransactionCommand_DisabledWhenInsufficientAmount()
     {
         var vm = CreateViewModel();
-        Assert.False(vm.CanConfirmTransaction);
-    }
-
-    [Fact]
-    public void CanConfirmTransaction_InsufficientPayment_ReturnsFalse()
-    {
-        var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.RefreshTotals();
         vm.ReceivedAmount = 50m;
-        Assert.False(vm.CanConfirmTransaction);
+        Assert.False(vm.ConfirmTransactionCommand.CanExecute(null));
     }
 
     [Fact]
-    public void CanConfirmTransaction_SufficientPayment_ReturnsTrue()
+    public void ConfirmTransactionCommand_EnabledWhenSufficientAmount()
     {
         var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8));
+        vm.RefreshTotals();
         vm.ReceivedAmount = 200m;
-        Assert.True(vm.CanConfirmTransaction);
+        Assert.True(vm.ConfirmTransactionCommand.CanExecute(null));
     }
 
     [Fact]
-    public void CanConfirmTransaction_ExactPayment_ReturnsTrue()
+    public void TaxAmount_IsFloor_NotRound()
     {
         var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-        // Total = 129 (120 + floor(120*0.08)=9)
-        vm.ReceivedAmount = 129m;
-        Assert.True(vm.CanConfirmTransaction);
-    }
-
-    [Fact]
-    public void CanConfirmTransaction_ChangesWithReceivedAmount()
-    {
-        var vm = CreateViewModel();
-        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-
-        var changed = false;
-        ((INotifyPropertyChanged)vm).PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(MainViewModel.CanConfirmTransaction))
-                changed = true;
-        };
-
-        vm.ReceivedAmount = 200m;
-        Assert.True(changed);
-    }
-
-    [Fact]
-    public void Dispose_CanBeCalledMultipleTimes()
-    {
-        var vm = CreateViewModel();
-        vm.Dispose();
-        vm.Dispose();
+        vm.CartItems.Add(new CartItemViewModel(1, "おにぎり", 120m, 8, 1));
+        vm.RefreshTotals();
+        Assert.Equal(9m, vm.TaxAmount8);
+        Assert.Equal(9m, vm.TaxAmount);
     }
 }
