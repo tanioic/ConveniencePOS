@@ -7,9 +7,9 @@
 | テーマ | 参照先 |
 |--------|--------|
 | 技術スタック・コード規約 | `step0100_constitution.md` |
-| データモデル構造 | `step0301_technical_plan.md` |
-| 軽減税率のDB・ViewModel変更 | `step0206_extension_tax_rate.md` |
-| UI レイアウト・バインディング | `step0204_ui.md` |
+| データモデル・ViewModel・サービス定義・C#コード | `step0301_technical_plan.md` |
+| 軽減税率の仕様 | `step0206_extension_tax_rate.md` |
+| UI レイアウト | `step0204_ui.md` |
 | レシート出力仕様 | `step0207_extension_receipt_simple.md` |
 | テスト戦略・カバレッジ対象 | `step0302_teststrategy.md` |
 | 機能仕様（何をやるか） | `step0205_mvp_pos.md` |
@@ -54,22 +54,22 @@
 ## 3. 既存コードとの差分管理
 
 ### 3.1. モデル層
-- `Product.TaxRate` と `TransactionItem.AppliedTaxRate` は既に追加済み（`step0206_extension_tax_rate.md` 実装済み）
+- 商品の税率フィールドと取引明細の適用税率フィールドは既に追加済み（`step0206_extension_tax_rate.md` 実装済み）
 - 新規追加不要
 
 ### 3.2. ViewModel層
-- `MainViewModel` の税率別集計ロジック（TaxableAmount8/10, TaxAmount8/10）は既に実装済み
-- `CartItemViewModel.LineTotalWithTax` は既に実装済み
+- 画面ロジックの税率別集計ロジックは既に実装済み
+- カート内商品の税込小計計算は既に実装済み
 - 追加実装が必要な箇所: なし（MVP機能は全て実装済み）
 
 ### 3.3. テスト層
-- `ConveniencePos.Tests` プロジェクトは既に存在し、xUnit + Moq + coverlet が導入済み
-- `Models/ModelTests.cs`: 15件のModel層テストが実装済み
-- `ViewModels/ViewModelTests.cs`: 27件のViewModel層テストが実装済み
+- テストプロジェクトは既に存在し、テストフレームワーク + モックライブラリ + カバレッジツールが導入済み
+- Model層テスト: 15件が実装済み
+- ViewModel層テスト: 27件が実装済み
 - 残タスク: Task 4.6（全件パス確認）と Task 4.7（カバレッジ計測）のみ
 
 ## 4. セキュリティ要件
-- DB接続文字列は `appsettings.json` に管理（`step0100_constitution.md` の DB 接続管理規約に準拠）
+- DB接続文字列は設定ファイルに管理（`step0100_constitution.md` の DB 接続管理規約に準拠）
 - レシート出力はデスクトップのみ（外部ネットワーク送信なし）
 - 認証・認権はMVP対象外（単一ユーザー前提）
 
