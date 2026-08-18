@@ -124,14 +124,14 @@
 | `AddItemCommand` | JANコードで商品検索→カートに追加 or 数量+1 |
 | `ConfirmTransactionCommand` | 取引保存→レシート生成(Desktop)→カートクリア |
 
-## CartItemViewModel
+## CartItemViewModel（`ViewModels/CartItemViewModel.cs`）
 | プロパティ | 型 | 説明 |
 |---|---|---|
 | `ProductId` | int | 商品ID |
 | `Name` | string | 商品名 |
 | `UnitPrice` | decimal | 単価 |
 | `TaxRate` | int | 税率 (8 or 10) |
-| `Quantity` | int | 数量 |
+| `Quantity` | int | 数量（最小値: 1、未満は `ArgumentOutOfRangeException` 投出） |
 | `LineTotal` | decimal | 税抜小計（算出: UnitPrice x Quantity） |
 | `LineTotalWithTax` | decimal | 税込小計（算出: Floor(LineTotal x (1+TaxRate/100))） |
 

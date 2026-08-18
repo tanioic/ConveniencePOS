@@ -2,40 +2,43 @@ using ConveniencePos.Data;
 using ConveniencePos.Models;
 using ConveniencePos.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace ConveniencePos.Tests.Services;
 
 public class BarcodeServiceTests : IDisposable
 {
-    private readonly PosDbContext _dbContext;
+    private readonly DbContextOptions<PosDbContext> _options;
+    private readonly TestDbContextFactory _factory;
     private readonly BarcodeService _sut;
 
     public BarcodeServiceTests()
     {
-        var options = new DbContextOptionsBuilder<PosDbContext>()
+        _options = new DbContextOptionsBuilder<PosDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
-        _dbContext = new PosDbContext(options);
+        _factory = new TestDbContextFactory(_options);
         SeedTestData();
-        _sut = new BarcodeService(_dbContext);
+        _sut = new BarcodeService(_factory, NullLogger<BarcodeService>.Instance);
     }
 
     private void SeedTestData()
     {
-        _dbContext.Products.AddRange(
+        using var dbContext = new PosDbContext(_options);
+        dbContext.Products.AddRange(
             new Product { Id = 1, JanCode = "777777", Name = "おにぎり 梅", Price = 120m, TaxRate = 8 },
             new Product { Id = 2, JanCode = "888888", Name = "緑茶 500ml", Price = 150m, TaxRate = 8 },
             new Product { Id = 3, JanCode = "999999", Name = "ポテトチップス", Price = 180m, TaxRate = 10 },
             new Product { Id = 4, JanCode = "111111", Name = "ティッシュ", Price = 200m, TaxRate = 10 },
             new Product { Id = 5, JanCode = "222222", Name = "コーヒー 熱 350ml", Price = 110m, TaxRate = 10 }
         );
-        _dbContext.SaveChanges();
+        dbContext.SaveChanges();
     }
 
     public void Dispose()
     {
-        _dbContext.Dispose();
+        _factory.Dispose();
     }
 
     [Fact]
@@ -96,10 +99,11 @@ public class BarcodeServiceTests : IDisposable
     [Fact]
     public async Task LookupByBarcodeAsync_DuplicateBarcode_ReturnsFirstMatch()
     {
-        _dbContext.Products.Add(
+        using var dbContext = new PosDbContext(_options);
+        dbContext.Products.Add(
             new Product { Id = 6, JanCode = "777777", Name = "おにぎり 塩", Price = 130m, TaxRate = 8 }
         );
-        _dbContext.SaveChanges();
+        dbContext.SaveChanges();
 
         var result = await _sut.LookupByBarcodeAsync("777777");
         Assert.NotNull(result);
@@ -109,10 +113,11 @@ public class BarcodeServiceTests : IDisposable
     [Fact]
     public async Task LookupByBarcodeAsync_ProductWithZeroPrice_ReturnsProduct()
     {
-        _dbContext.Products.Add(
+        using var dbContext = new PosDbContext(_options);
+        dbContext.Products.Add(
             new Product { Id = 99, JanCode = "000000", Name = "テスト商品", Price = 0m, TaxRate = 10 }
         );
-        _dbContext.SaveChanges();
+        dbContext.SaveChanges();
 
         var result = await _sut.LookupByBarcodeAsync("000000");
         Assert.NotNull(result);
@@ -130,7 +135,8 @@ public class BarcodeServiceTests : IDisposable
     [Fact]
     public async Task LookupByBarcodeAsync_ProductsTableHas5Rows()
     {
-        var count = await _dbContext.Products.CountAsync();
+        using var dbContext = new PosDbContext(_options);
+        var count = await dbContext.Products.CountAsync();
         Assert.Equal(5, count);
     }
 }

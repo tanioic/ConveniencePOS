@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using ConveniencePos.Services;
 using ConveniencePos.ViewModels;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 
 namespace ConveniencePos.Tests.ViewModels;
@@ -23,7 +25,7 @@ public class CartItemViewModelTests
     }
 
     [Fact]
-    public void LineTotal_ZeroQuantity_ReturnsZero()
+    public void Quantity_BelowOne_ThrowsArgumentOutOfRangeException()
     {
         var item = new CartItemViewModel
         {
@@ -31,10 +33,10 @@ public class CartItemViewModelTests
             Name = "おにぎり 梅",
             UnitPrice = 120m,
             TaxRate = 8,
-            Quantity = 0
+            Quantity = 1
         };
 
-        Assert.Equal(0m, item.LineTotal);
+        Assert.Throws<ArgumentOutOfRangeException>(() => item.Quantity = 0);
     }
 
     [Fact]
@@ -185,10 +187,11 @@ public class MainViewModelTests
 {
     private static MainViewModel CreateViewModel()
     {
-        var mockDbContext = new Moq.Mock<ConveniencePos.Data.PosDbContext>();
-        var mockBarcodeService = new Moq.Mock<IBarcodeService>();
-        var mockReceiptService = new Moq.Mock<IReceiptService>();
-        return new MainViewModel(mockDbContext.Object, mockBarcodeService.Object, mockReceiptService.Object);
+        var mockBarcodeService = new Mock<IBarcodeService>();
+        var mockTransactionService = new Mock<ITransactionService>();
+        var mockReceiptService = new Mock<IReceiptService>();
+        var mockLogger = new Mock<ILogger<MainViewModel>>();
+        return new MainViewModel(mockBarcodeService.Object, mockTransactionService.Object, mockReceiptService.Object, mockLogger.Object);
     }
 
     private static void AddCartItem(MainViewModel vm, int productId, string name,

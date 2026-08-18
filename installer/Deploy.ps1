@@ -5,8 +5,8 @@
 
 $ErrorActionPreference = "Stop"
 $Version = "1.0.0"
-$OutputDir = "C:\Users\tanimoto\Desktop\ConveniencePos\installer\output"
-$ZipFile = "C:\Users\tanimoto\Desktop\ConveniencePos\installer\output\ConveniencePos-v$Version.zip"
+$OutputDir = Join-Path $PSScriptRoot "output"
+$ZipFile = Join-Path $OutputDir "ConveniencePos-v$Version.zip"
 
 Write-Host "ConveniencePos v$Version をデプロイ中..." -ForegroundColor Cyan
 

@@ -21,10 +21,13 @@
   - `AppliedTaxRate` (int, 購入時点の適用税率)
 
 ## 2. 依存関係の注入とサービス
-- **PosDbContext**: Entity Framework Coreのデータベースコンテキスト。
-- **IBarcodeService**: バーコードJANコードによる商品検索を行うインターフェース。詳細は `step0208_service_architecture.md` を参照。
-- **BarcodeService**: `IBarcodeService` の実装。`PosDbContext` をコンストラクタで受け取り、DBから商品を検索する。
-- **DI方針**: MVPでは DI コンテナを導入せず、コンストラクタオーバーロードによる簡易DIパターンを採用。テストではモックを注入可能。
+- **PosDbContext**: Entity Framework Coreのデータベースコンテキスト。`IDbContextFactory<PosDbContext>` を通じて毎操作ごとに短寿命インスタンスを生成。
+- **IBarcodeService**: バーコードJANコードによる商品検索を行うインターフェース。全メソッドに `CancellationToken` 対応。詳細は `step0208_service_architecture.md` を参照。
+- **BarcodeService**: `IBarcodeService` の実装。`IDbContextFactory` を受け取り、毎回新しい DbContext を生成して DB から商品を検索する。
+- **ITransactionService**: 取引保存を行うインターフェース。`SaveTransactionAsync` で `CancellationToken` 対応、`DbUpdateException` ハンドリング付き。
+- **TransactionService**: `ITransactionService` の実装。`IDbContextFactory` と `ILogger` を使用。
+- **IReceiptService**: レシート生成・保存を行うインターフェース。`ReceiptContext` レコードを使用してパラメータを整理。`SaveReceiptAsync` で非同期ファイル書き込み。
+- **DI方針**: `AddSingleton` で全サービスを登録。DbContext は `AddDbContextFactory` でファクトリ登録し、毎操作ごとに短寿命インスタンスを生成してスレッドセーフ性を確保。
 
 ## 3. 外部システム連携
 
@@ -40,7 +43,7 @@
 | 会計ソフト（弥生等） | CSV | バッチ | 低 |
 
 ### 3.3. データエクスポート仕様
-- レシート: テキストファイル（固定幅32文字） -> デスクトップ
+- レシート: テキストファイル（固定幅32文字） -> デスクトップ（`ReceiptService.SaveReceiptAsync` で非同期書き込み）
 - 取引データ: SQL Server に直接保存
 - 将来の売上集計: SQL クエリまたはビューで集計
 
@@ -57,21 +60,23 @@
 
 ### 4.2. 例外処理の実装パターン
 ```csharp
-// MainViewModel の例
-try
+// TransactionService の例
+public async Task<Transaction> SaveTransactionAsync(
+    decimal totalAmount, decimal taxAmount,
+    IReadOnlyList<TransactionItem> items, CancellationToken cancellationToken = default)
 {
-    await _dbContext.SaveChangesAsync();
-    // 正常時: レシート出力 -> カートクリア
-}
-catch (DbUpdateException ex)
-{
-    // DB保存失敗: カート維持、再試行可能
-    Console.WriteLine($"DB保存エラー: {ex.Message}");
-}
-catch (Exception ex)
-}
-    // 予期せぬエラー
-    Console.WriteLine($"予期せぬエラー: {ex.Message}");
+    var transaction = new Transaction { ... };
+    _dbContext.Transactions.Add(transaction);
+    try
+    {
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+    catch (DbUpdateException ex)
+    {
+        throw new InvalidOperationException(
+            "取引の保存に失敗しました。データベース接続を確認してください。", ex);
+    }
+    return transaction;
 }
 ```
 
@@ -130,9 +135,19 @@ catch (Exception ex)
     |                                       v
     |                              [PosDbContext] --EF Core--> [SQL Server]
     |                                       |
+    |                                       | 取引保存
+    |                                       v
+    |                              [ITransactionService] --DI--> [TransactionService]
+    |                                       |
+    |                                       v
+    |                              [PosDbContext] --EF Core--> [SQL Server]
+    |                                       |
     |                                       | レシート出力
     |                                       v
-    |                              [File.WriteAllText] --> [デスクトップ/receipt_[ID].txt]
+    |                              [IReceiptService] --DI--> [ReceiptService]
+    |                                       |
+    |                                       v
+    |                              [File.WriteAllTextAsync] --> [デスクトップ/receipt_[ID].txt]
     |
     | UI更新（PropertyChanged通知）
     v
@@ -146,6 +161,8 @@ catch (Exception ex)
 |-----------|--------|----------|--------|
 | 1.0 | 2026-08-18 | 初版作成 | 開発チーム |
 | 1.1 | 2026-08-18 | BarcodeService DI設計反映 | 開発チーム |
+| 1.2 | 2026-08-18 | ITransactionService/IReceiptService追加、CancellationToken対応、DbUpdateExceptionハンドリング、ReceiptContext導入、非同期ファイル出力対応 | 開発チーム |
+| 1.3 | 2026-08-18 | IDbContextFactory 導入、全サービスに ILogger 注入、接続文字列起動時バリデーション、エラーハンドリング粒度改善、XML ドキュメント追加 | 開発チーム |
 
 ## 承認記録
 

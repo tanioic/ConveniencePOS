@@ -8,22 +8,22 @@
 ## 2. 作成順序フロー
 
 ```
-Step1: constitution.md（事前準備）
+Step1: step0100_constitution.md（事前準備）
   │   プロジェクトの立ち上げ時に1回だけ作成
   │   「絶対に破ってはいけないルール」を定義
   │
   ▼
-Step2: spec.md（要件定義 / 外部設計）
+Step2: step0200_spec.md（要件定義 / 外部設計）
   │   Why（なぜ必要か）+ What（何ができるようになるか）
   │   業務ロジックと受け入れ基準を明確に
   │
   ▼
-Step3: plan.md（内部設計 / プログラム設計）
+Step3: step0300_plan.md（内部設計 / プログラム設計）
   │   How（どうやって実装するか）
   │   ファイル変更、DBスキーマ、API設計を定義
   │
   ▼
-Step4: tasks.md（モジュール設計 / テスト設計）
+Step4: step0400_tasks.md（モジュール設計 / テスト設計）
       実装すべきソースコード・テストを細かいチェックリストに分解
       AIがこのリストを上から順に実行し、自動テストをパスしながら開発
 ```
@@ -46,7 +46,7 @@ Step4: tasks.md（モジュール設計 / テスト設計）
 
 **本プロジェクトでの対応:**
 ```
-constitution.md に定義済み:
+step0100_constitution.md に定義済み:
 - 言語: C# (.NET 8.0)
 - UI: WPF
 - アーキテクチャ: MVVM (CommunityToolkit.Mvvm)
@@ -55,6 +55,12 @@ constitution.md に定義済み:
 - コード規約: PascalCase/camelCase、Viewにはロジックを書かない
 ```
 
+**step0100_constitution.md から派生する補助ドキュメント:**
+
+| ファイル | 役割 | 作成タイミング |
+|----------|------|---------------|
+| `step0101_development_history.md` | 開発履歴・実施記録 | step0100_constitution.md 確定後 |
+
 ---
 
 ### Step2: step0200_spec.md の作成（要件定義 / 外部設計）
@@ -62,7 +68,7 @@ constitution.md に定義済み:
 | 項目 | 内容 |
 |------|------|
 | **対象ファイル** | `step0200_spec.md` |
-| **タイミング** | constitution.md 確定後 |
+| **タイミング** | step0100_constitution.md 確定後 |
 | **作成者** | 人間（プロダクトマネージャーまたはエンジニア） |
 | **相当するウォーターフォール** | 要件定義、外部設計 |
 
@@ -79,7 +85,7 @@ constitution.md に定義済み:
 
 **本プロジェクトでの対応:**
 ```
-spec.md に定義済み:
+step0200_spec.md に定義済み:
 - プロジェクト背景・ステークホルダー
 - ユーザージャーニー
 - 業務上の目的（KPI付き）
@@ -88,16 +94,16 @@ spec.md に定義済み:
 - スコープ外
 ```
 
-**spec.md から派生する補助ドキュメント:**
+**step0200_spec.md から派生する補助ドキュメント:**
 
 | ファイル | 役割 | 作成タイミング |
 |----------|------|---------------|
-| `step0201_business_rules.md` | 業務ルールの詳細定義 | spec.md 作成時または直後 |
-| `step0202_process_flow.md` | 業務フロー図・状態遷移図 | spec.md 作成時または直後 |
-| `step0203_non_functional_requirements.md` | 非機能要件（パフォーマンス等） | spec.md 作成時または直後 |
-| `step0204_ui.md` | 画面設計（レイアウト・バインディング） | spec.md 確定後 |
-| `step0205_mvp_pos.md` | 機能仕様の詳細 | spec.md 確定後 |
-| `step02[67]_extension_*.md` | 仕様拡張 | spec.md 確定後に必要に応じて |
+| `step0201_business_rules.md` | 業務ルールの詳細定義 | step0200_spec.md 作成時または直後 |
+| `step0202_process_flow.md` | 業務フロー図・状態遷移図 | step0200_spec.md 作成時または直後 |
+| `step0203_non_functional_requirements.md` | 非機能要件（パフォーマンス等） | step0200_spec.md 作成時または直後 |
+| `step0204_ui.md` | 画面設計（レイアウト・バインディング） | step0200_spec.md 確定後 |
+| `step0205_mvp_pos.md` | 機能仕様の詳細 | step0200_spec.md 確定後 |
+| `step02[67]_extension_*.md` | 仕様拡張 | step0200_spec.md 確定後に必要に応じて |
 
 ---
 
@@ -106,12 +112,12 @@ spec.md に定義済み:
 | 項目 | 内容 |
 |------|------|
 | **対象ファイル** | `step0300_plan.md` |
-| **タイミング** | spec.md 確定後 |
+| **タイミング** | step0200_spec.md 確定後 |
 | **作成者** | AIエージェント、または人間とAIの共同作業 |
 | **相当するウォーターフォール** | 内部設計、プログラム設計 |
 
 **記述内容:**
-- How: spec.md を満たすために具体的にどう実装するか
+- How: step0200_spec.md を満たすために具体的にどう実装するか
 - ファイル変更の対象と方針
 - DBスキーマ設計
 - API / インターフェース設計
@@ -124,21 +130,21 @@ spec.md に定義済み:
 
 **本プロジェクトでの対応:**
 ```
-plan.md に定義済み:
+step0300_plan.md に定義済み:
 - 既存ドキュメントとの関係（参照表）
 - タスク間の依存関係と実装順序
 - 既存コードとの差分管理
 - セキュリティ要件
 ```
 
-**plan.md から派生する補助ドキュメント:**
+**step0300_plan.md から派生する補助ドキュメント:**
 
 | ファイル | 役割 | 作成タイミング |
 |----------|------|---------------|
-| `step0301_technical_plan.md` | データモデル・DB設計・API設計の詳細 | plan.md 作成時 |
-| `step0302_teststrategy.md` | テスト戦略（フレームワーク・カバレッジ） | plan.md 作成時 |
-| `step0303_testplan.md` | テスト計画（スケジュール・進入条件） | plan.md 作成時 |
-| `step0304_deployment.md` | 運用・配置計画 | plan.md 作成時 |
+| `step0301_technical_plan.md` | データモデル・DB設計・API設計の詳細 | step0300_plan.md 作成時 |
+| `step0302_teststrategy.md` | テスト戦略（フレームワーク・カバレッジ） | step0300_plan.md 作成時 |
+| `step0303_testplan.md` | テスト計画（スケジュール・進入条件） | step0300_plan.md 作成時 |
+| `step0304_deployment.md` | 運用・配置計画 | step0300_plan.md 作成時 |
 
 ---
 
@@ -147,23 +153,23 @@ plan.md に定義済み:
 | 項目 | 内容 |
 |------|------|
 | **対象ファイル** | `step0400_tasks.md` |
-| **タイミング** | plan.md のレビュー完了後 |
+| **タイミング** | step0300_plan.md のレビュー完了後 |
 | **作成者** | AIエージェント（自動生成） |
 | **相当するウォーターフォール** | モジュール設計、テスト設計 |
 
 **記述内容:**
-- plan.md の方針に沿った、実装すべきソースコード・テストのチェックリスト
+- step0300_plan.md の方針に沿った、実装すべきソースコード・テストのチェックリスト
 - 1タスク = 1つの具体的な作業（ファイル作成、関数追加、テスト作成等）
 - 各タスクに [X] 完了 / [ ] 未完了のチェックボックス
 
 **ポイント:**
 - AIはこのチェックリストを上から順に実行する
 - 各タスク完了時に自動テストをパスさせながら開発を進める
-- タスク間の依存関係は plan.md で定義済みの順序に従う
+- タスク間の依存関係は step0300_plan.md で定義済みの順序に従う
 
 **本プロジェクトでの対応:**
 ```
-tasks.md に定義済み:
+step0400_tasks.md に定義済み:
 - フェーズ1: データベースとモデルの構築（完了）
 - フェーズ2: ロジックとViewModelの実装（一部完了）
 - フェーズ3: 画面（UI）の構築と結合（未着手）
@@ -174,6 +180,8 @@ tasks.md に定義済み:
 
 ```
 step0100_constitution.md (Step1)
+    │
+    ├──> step0101_development_history.md
     │
     ├──> step0200_spec.md (Step2)
     │       │
@@ -199,36 +207,36 @@ step0100_constitution.md (Step1)
 ## 5. ステップごとのチェックポイント
 
 ### Step1 完了条件
-- [X] constitution.md が存在し、技術スタックが定義されている
+- [X] step0100_constitution.md が存在し、技術スタックが定義されている
 - [X] コード規約が定義されている
 - [X] プロジェクトメンバーが内容を認識している
 
 ### Step2 完了条件
-- [X] spec.md が存在し、Why + What が記述されている
+- [X] step0200_spec.md が存在し、Why + What が記述されている
 - [X] 受け入れ基準（AC）がすべて定義されている
 - [X] スコープ外が明確に定義されている
-- [X] business_rules.md が作成されている
-- [X] process_flow.md が作成されている
-- [X] 画面設計（ui.md）が作成されている
+- [X] step0201_business_rules.md が作成されている
+- [X] step0202_process_flow.md が作成されている
+- [X] 画面設計（step0204_ui.md）が作成されている
 
 ### Step3 完了条件
-- [X] plan.md が存在し、How が記述されている
-- [X] plan.md が人間によってレビューされ、承認されている
-- [X] technical_plan.md が作成されている
-- [X] テスト戦略（teststrategy.md）が作成されている
+- [X] step0300_plan.md が存在し、How が記述されている
+- [X] step0300_plan.md が人間によってレビューされ、承認されている
+- [X] step0301_technical_plan.md が作成されている
+- [X] テスト戦略（step0302_teststrategy.md）が作成されている
 
 ### Step4 完了条件
-- [X] tasks.md が存在し、チェックリスト形式で分解されている
-- [X] 各タスクが plan.md の方針に合致している
-- [X] タスクの実行順序が plan.md の依存関係に合致している
+- [X] step0400_tasks.md が存在し、チェックリスト形式で分解されている
+- [X] 各タスクが step0300_plan.md の方針に合致している
+- [X] タスクの実行順序が step0300_plan.md の依存関係に合致している
 
 ## 6. ルール
 
 1. **Step の順序は厳守する**: Step1 → Step2 → Step3 → Step4 の順で進める
-2. **Step3 は人間のレビュー必須**: plan.md はAIが作成しても、人間がレビューしてからStep4に進む
-3. **Step4 は自動生成**: tasks.md はplan.md の方針に沿ってAIが自動生成する
-4. **仕様変更時は上游から修正**: spec.md を変更した場合、plan.md と tasks.md も再点検する
-5. **constitution.md はプロジェクト全体で共有**: すべての開発者が参照し、ルール遵守の責任を持つ
+2. **Step3 は人間のレビュー必須**: step0300_plan.md はAIが作成しても、人間がレビューしてからStep4に進む
+3. **Step4 は自動生成**: step0400_tasks.md はstep0300_plan.md の方針に沿ってAIが自動生成する
+4. **仕様変更時は上游から修正**: step0200_spec.md を変更した場合、step0300_plan.md と step0400_tasks.md も再点検する
+5. **step0100_constitution.md はプロジェクト全体で共有**: すべての開発者が参照し、ルール遵守の責任を持つ
 
 ## 7. 現状のステップ状況
 

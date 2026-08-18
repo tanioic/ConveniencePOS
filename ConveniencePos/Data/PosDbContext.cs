@@ -19,18 +19,17 @@ public class PosDbContext : DbContext
     /// <summary>取引明細テーブル</summary>
     public DbSet<TransactionItem> TransactionItems => Set<TransactionItem>();
 
-    public PosDbContext() { }
-
+    /// <summary>
+    /// DIコンテキストからインスタンスを生成するコンストラクタ。
+    /// </summary>
     public PosDbContext(DbContextOptions<PosDbContext> options) : base(options) { }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            optionsBuilder.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=ConveniencePosDb;Trusted_Connection=True;");
-        }
-    }
+    /// <summary>
+    /// マイグレーション用の空コンストラクタ。
+    /// </summary>
+    protected PosDbContext() { }
 
+    /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Product>().HasData(ProductSeedData.GetProducts());

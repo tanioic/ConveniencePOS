@@ -30,22 +30,51 @@
 | `IBarcodeService` | `Services/IBarcodeService.cs` | バーコードによる商品検索のインターフェース |
 | `BarcodeService` | `Services/BarcodeService.cs` | バーコード検索の実装（DB接続） |
 
-## 4. IBarcodeService インターフェース
+## 4. サービスインターフェース
 
-### 4.1. 定義
+### 4.1. IBarcodeService
 
 ```csharp
 public interface IBarcodeService
 {
-    Task<Product?> LookupByBarcodeAsync(string barcode);
+    Task<Product?> LookupByBarcodeAsync(string barcode, CancellationToken cancellationToken = default);
 }
 ```
 
-### 4.2. 動作仕様
-
 | メソッド | 入力 | 出力 | 動作 |
 |----------|------|------|------|
-| `LookupByBarcodeAsync` | `string barcode` (JANコード) | `Product?` | JANコードに合致する商品をDBから検索し、存在しなければ `null` を返す |
+| `LookupByBarcodeAsync` | `string barcode`, `CancellationToken` | `Product?` | JANコードに合致する商品をDBから検索し、存在しなければ `null` を返す |
+
+### 4.2. ITransactionService
+
+```csharp
+public interface ITransactionService
+{
+    Task<Transaction> SaveTransactionAsync(
+        decimal totalAmount,
+        decimal taxAmount,
+        IReadOnlyList<TransactionItem> items,
+        CancellationToken cancellationToken = default);
+}
+```
+
+### 4.3. IReceiptService
+
+```csharp
+public interface IReceiptService
+{
+    string GenerateReceipt(ReceiptContext context);
+    Task SaveReceiptAsync(int transactionId, string receiptContent, CancellationToken cancellationToken = default);
+}
+
+public record ReceiptItem(string Name, int Quantity, decimal LineTotalWithTax, int TaxRate);
+
+public record ReceiptContext(
+    int TransactionId, DateTime TransactionTime, IReadOnlyList<ReceiptItem> Items,
+    decimal Subtotal, decimal TaxableAmount8, decimal TaxableAmount10,
+    decimal TaxAmount8, decimal TaxAmount10, decimal TaxAmount, decimal TotalAmount,
+    decimal ReceivedAmount, decimal Change);
+```
 
 ### 4.3. 例外
 
@@ -58,7 +87,8 @@ public interface IBarcodeService
 
 ```
 BarcodeService
-  └── PosDbContext (コンストラクタ経由で注入)
+  ├── IDbContextFactory<PosDbContext> (コンストラクタ経由で注入)
+  └── ILogger<BarcodeService> (コンストラクタ経由で注入)
 ```
 
 ### 5.2. 実装コード
@@ -66,17 +96,22 @@ BarcodeService
 ```csharp
 public class BarcodeService : IBarcodeService
 {
-    private readonly PosDbContext _dbContext;
+    private readonly IDbContextFactory<PosDbContext> _contextFactory;
+    private readonly ILogger<BarcodeService> _logger;
 
-    public BarcodeService(PosDbContext dbContext)
+    public BarcodeService(IDbContextFactory<PosDbContext> contextFactory, ILogger<BarcodeService> logger)
     {
-        _dbContext = dbContext;
+        _contextFactory = contextFactory;
+        _logger = logger;
     }
 
-    public async Task<Product?> LookupByBarcodeAsync(string barcode)
+    public async Task<Product?> LookupByBarcodeAsync(string barcode, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Products
-            .FirstOrDefaultAsync(p => p.JanCode == barcode);
+        ArgumentNullException.ThrowIfNull(barcode);
+        _logger.LogDebug("バーコード検索: {Barcode}", barcode);
+        await using var dbContext = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        return await dbContext.Products
+            .FirstOrDefaultAsync(p => p.JanCode == barcode, cancellationToken);
     }
 }
 ```
@@ -91,44 +126,56 @@ public class BarcodeService : IBarcodeService
 ### 6.1. MainViewModel のコンストラクタ
 
 ```csharp
-// デフォルトコンストラクタ（本番用）
-public MainViewModel()
-    : this(new PosDbContext(), new BarcodeService(new PosDbContext())) { }
-
-// テスト用コンストラクタ（DI注入）
-public MainViewModel(PosDbContext dbContext, IBarcodeService barcodeService)
+public MainViewModel(
+    IBarcodeService barcodeService,
+    ITransactionService transactionService,
+    IReceiptService receiptService,
+    ILogger<MainViewModel> logger)
 {
-    _dbContext = dbContext;
     _barcodeService = barcodeService;
+    _transactionService = transactionService;
+    _receiptService = receiptService;
+    _logger = logger;
 }
 ```
 
-### 6.2. 本番環境での利用
+### 6.2. 本番環境での利用（App.xaml.cs）
 
 ```csharp
-// MainWindow.xaml.cs でデフォルトコンストラクタを使用
-var vm = new MainViewModel();
-DataContext = vm;
+services.AddLogging(builder => { builder.AddConsole(); });
+services.AddDbContextFactory<PosDbContext>(options => options.UseSqlServer(connectionString));
+services.AddSingleton<IBarcodeService, BarcodeService>();
+services.AddSingleton<ITransactionService, TransactionService>();
+services.AddSingleton<IReceiptService>(sp => { ... });
+services.AddSingleton<MainViewModel>();
 ```
+
+> **DI ライフタイム方針**: ViewModel は WPF ウィンドウの生命周期と同一であるため、全サービスを `AddSingleton` で登録する。DbContext は `IDbContextFactory` を使用して毎操作ごとに短寿命インスタンスを生成し、スレッドセーフ性とライフタイム問題を回避する。
 
 ### 6.3. テスト環境での利用
 
 ```csharp
 // テストコードでモックを注入
-var mockDbContext = new Mock<PosDbContext>();
 var mockBarcodeService = new Mock<IBarcodeService>();
-var vm = new MainViewModel(mockDbContext.Object, mockBarcodeService.Object);
+var mockTransactionService = new Mock<ITransactionService>();
+var mockReceiptService = new Mock<IReceiptService>();
+var mockLogger = new Mock<ILogger<MainViewModel>>();
+var vm = new MainViewModel(
+    mockBarcodeService.Object,
+    mockTransactionService.Object,
+    mockReceiptService.Object,
+    mockLogger.Object);
 ```
 
-### 6.4. DI コンテナ未使用の理由
+### 6.4. DI コンテナの採用
 
-MVP では Microsoft.Extensions.DependencyInjection を導入せず、**コンストラクタオーバーロード**による簡易DIパターンを採用する。
+Microsoft.Extensions.DependencyInjection を App.xaml.cs で使用し、コンストラクタ経由でサービスを注入する。
 
 | 理由 | 説明 |
 |------|------|
-| 複雑性の回避 | DI コンテナの設定・管理はMVPの規模に対して過大 |
-| WPFの制約 | App.xaml.cs での DI セットアップが必要 |
-| 将来拡張 | 本番化時に DI コンテナへの移行は容易 |
+| テスト容易性 | モック注入による単体テストが容易 |
+| 切り離し容易性 | サービス実装の変更が ViewModel に影響しない |
+| 拡張性 | 新規サービス追加時に DI 登録のみで対応可能 |
 
 ## 7. データフロー図（サービス層含む）
 
@@ -151,7 +198,13 @@ MVP では Microsoft.Extensions.DependencyInjection を導入せず、**コン�
     │
     └──> ConfirmTransactionAsync()
               │
-              ├── [PosDbContext] に取引保存
+              ├──> ITransactionService.SaveTransactionAsync()
+              │         │
+              │         v
+              │    [TransactionService] ──> [PosDbContext] ──> [SQL Server]
+              │         │
+              │         └── Transaction を返却
+              │
               └── レシート出力 → デスクトップ
 ```
 
@@ -160,22 +213,28 @@ MVP では Microsoft.Extensions.DependencyInjection を導入せず、**コン�
 ### 8.1. BarcodeService のテスト方針
 
 - 単体テスト: モックを使用した `IBarcodeService` の呼び出しテスト（MainViewModelTests でカバー）
-- 統合テスト: 実際の DB との接続テスト（将来対応）
+- 統合テスト: 実際の DB との接続テスト（TransactionIntegrationTests でカバー）
 
 ### 8.2. 現在のテスト状況
 
 | テストクラス | テスト件数 | カバー対象 |
 |-------------|----------|-----------|
 | `CartItemViewModelTests` | 9件 | CartItemViewModel の計算ロジック |
-| `MainViewModelTests` | 18件 | MainViewModel の合計計算、DI対応済み |
+| `MainViewModelTests` | 25件 | MainViewModel の合計計算、DI対応済み |
+| `BarcodeServiceTests` | 10件 | バーコード検索ロジック |
+| `TransactionServiceTests` | 8件 | 取引保存のバリデーション・永続化 |
+| `TransactionIntegrationTests` | 9件 | 会計確定→DB保存→レシート出力 |
 | `ModelTests` | 15件 | モデルクラスのプロパティ |
-| **合計** | **42件** | - |
+| **合計** | **76件** | - |
 
 ## バージョン履歴
 
 | バージョン | 変更日 | 変更内容 | 変更者 |
 |-----------|--------|----------|--------|
 | 1.0 | 2026-08-18 | 初版作成 | 開発チーム |
+| 1.1 | 2026-08-18 | ITransactionService, IReceiptService追加、CancellationToken対応、DI ライフタイム修正（Singleton統一）、ReceiptContext パラメータオブジェクト導入 | 開発チーム |
+| 1.2 | 2026-08-18 | IDbContextFactory 導入によるスレッドセーフ DbContext 管理、全サービスに ILogger 注入、全公開メンバーに XML ドキュメント追加 | 開発チーム |
+| 1.3 | 2026-08-18 | BarcodeService に ILogger 注入・ArgumentNullException追加、ReceiptService に null チェック追加、EnsureCreated() 導入によるマイグレーション不要化 | 開発チーム |
 
 ## 承認記録
 

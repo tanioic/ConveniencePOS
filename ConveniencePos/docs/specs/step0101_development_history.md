@@ -10,21 +10,21 @@ Spec-driven development の Step1〜Step4 に従い、仕様策定からリリ�
 ### 2.1 Step1: 仕様の根拠となる情報の収集 (2026-08-17)
 | 項目 | 内容 |
 |------|------|
-| 実施内容 | constitution.md の作成、技術スタック・コード規約の定義 |
+| 実施内容 | step0100_constitution.md の作成、技術スタック・コード規約の定義 |
 | 成果物 | `step0100_constitution.md` |
 | 技術スタック | C# .NET 8.0, WPF, MVVM (CommunityToolkit.Mvvm), SQL Server LocalDB, EF Core 8.0.11 |
 
 ### 2.2 Step2: 仕様の記述 (2026-08-17)
 | 項目 | 内容 |
 |------|------|
-| 実施内容 | spec.md, business_rules.md, process_flow.md, non_functional_requirements.md, ui.md, mvp_pos.md, extension_tax_rate.md, extension_receipt_simple.md, service_architecture.md の9仕様書を作成 |
+| 実施内容 | step0200_spec.md, step0201_business_rules.md, step0202_process_flow.md, step0203_non_functional_requirements.md, step0204_ui.md, step0205_mvp_pos.md, step0206_extension_tax_rate.md, step0207_extension_receipt_simple.md, step0208_service_architecture.md の9仕様書を作成 |
 | 成果物 | `step0200_spec.md` ～ `step0208_service_architecture.md` |
 | 受入基準 | AC-1 ～ AC-13 を定義 |
 
 ### 2.3 Step3: 技術計画・テスト戦略 (2026-08-17)
 | 項目 | 内容 |
 |------|------|
-| 実施内容 | plan.md, technical_plan.md, teststrategy.md, testplan.md, deployment.md の5仕様書を作成 |
+| 実施内容 | step0300_plan.md, step0301_technical_plan.md, step0302_teststrategy.md, step0303_testplan.md, step0304_deployment.md の5仕様書を作成 |
 | 成果物 | `step0300_plan.md` ～ `step0304_deployment.md` |
 
 ### 2.4 Step4: 実装 (2026-08-17)
@@ -70,6 +70,59 @@ Spec-driven development の Step1〜Step4 に従い、仕様策定からリリ�
 | 削除対象 | `bin/`, `obj/`, `publish/`, `TestResults/`, `installer/output/`, WiX関連ファイル |
 | リネーム | 仕様書22ファイルを3桁→4桁形式に統一 |
 
+### 2.10 Phase10: リファクタリング - CartItemViewModel 分離 (2026-08-18)
+| 項目 | 内容 |
+|------|------|
+| 実施内容 | MainViewModel.cs に混在していた CartItemViewModel クラスを独立ファイルに切り出し |
+| 理由 | MVVM準拠: 各ViewModelは単一責任で別ファイルに配置すべき |
+| 変更ファイル | `ViewModels/MainViewModel.cs` (削除: CartItemViewModel クラス), `ViewModels/CartItemViewModel.cs` (新規) |
+| テスト結果 | 全68件パス (変更なし) |
+
+### 2.11 Phase11: リファクタリング - TransactionService 抽出 (2026-08-18)
+| 項目 | 内容 |
+|------|------|
+| 実施内容 | MainViewModel.cs から取引保存ロジックを TransactionService に抽出、DI Container対応 |
+| 理由 | SRP準拠: DB操作はサービス層で行う。ViewModelはUI状態のみ管理 |
+| 変更ファイル | `ViewModels/MainViewModel.cs` (PosDbContext依存を削除), `Services/ITransactionService.cs` (新規), `Services/TransactionService.cs` (新規), `App.xaml.cs` (DI登録追加) |
+| テスト更新 | `ViewModels/ViewModelTests.cs`, `Integration/TransactionIntegrationTests.cs` を新しいコンストラクタに合わせて更新 |
+| テスト結果 | 全68件パス (変更なし) |
+
+### 2.12 Phase12: プロ品質リファクタリング (2026-08-18)
+| 項目 | 内容 |
+|------|------|
+| 実施内容 | 8件のCRITICAL/MEDIUM品質課題を一括修正 |
+| 修正一覧 | ① DI寿命Mismatch修正（Scoped→Singleton統一）② 全非同期メソッドにCancellationToken付与 ③ TransactionServiceにDbUpdateExceptionハンドリング追加 ④ ReceiptService.SaveReceiptを非同期化（SaveReceiptAsync） ⑤ CartItemViewModel数量バリデーション（最小値1）追加 ⑥ PosDbContextハードコード接続文字列削除 ⑦ GenerateReceipt 12パラメータ→ReceiptContext レコード化 ⑧ インテグレーションテストのDesktop直書きをTempDirに変更 |
+| 変更ファイル | `App.xaml.cs`, `MainViewModel.cs`, `CartItemViewModel.cs`, `IBarcodeService.cs`, `BarcodeService.cs`, `ITransactionService.cs`, `TransactionService.cs`, `IReceiptService.cs`, `ReceiptService.cs`, `PosDbContext.cs`, `ViewModelTests.cs`, `TransactionIntegrationTests.cs` |
+| スペック更新 | `step0208_service_architecture.md`, `step0204_ui.md`, `step0206_extension_tax_rate.md`, `step0301_technical_plan.md` |
+| テスト結果 | 全68件パス |
+
+### 2.13 Phase13: プロ品質リファクタリング 第2弾 (2026-08-18)
+| 項目 | 内容 |
+|------|------|
+| 実施内容 | アーキテクチャ的品質課題を追加修正 |
+| 修正一覧 | ① IDbContextFactory 導入による DI lifetime 問題の根本解決（Singleton サービス + Scoped DbContext の矛盾を解消） ② TransactionService / ReceiptService に ILogger 注入追加 ③ App.xaml.cs で接続文字列 null チェック + 起動時バリデーション ④ 全公開メンバーに XML ドキュメント追加 ⑤ MainViewModel のエラーハンドリング粒度改善（DbException / InvalidOperationException / IOException を分離） ⑥ ReceiptService.SaveReceiptAsync で出力ディレクトリ自動作成 ⑦ TransactionService.SaveTransactionAsync で入力バリデーション追加 ⑧ App.xaml.cs のロガー登録順序修正 |
+| 変更ファイル | `App.xaml.cs`, `MainViewModel.cs`, `IBarcodeService.cs`, `BarcodeService.cs`, `ITransactionService.cs`, `TransactionService.cs`, `IReceiptService.cs`, `ReceiptService.cs`, `PosDbContext.cs`, `ViewModelTests.cs`, `BarcodeServiceTests.cs`, `TransactionIntegrationTests.cs`, `TestDbContextFactory.cs` (新規) |
+| スペック更新 | `step0208_service_architecture.md`, `step0301_technical_plan.md` |
+| テスト結果 | 全68件パス |
+
+### 2.14 Phase14: TransactionService ユニットテスト追加 (2026-08-18)
+| 項目 | 内容 |
+|------|------|
+| 実施内容 | TransactionService の入力バリデーション（null/空リスト/負数金額）に対するユニットテスト8件を追加 |
+| 成果物 | `Services/TransactionServiceTests.cs` (8件) |
+| スペック更新 | `step0208_service_architecture.md` テスト件数更新 |
+| テスト結果 | 全76件パス |
+
+### 2.15 Phase15: 最終品質審査・クリーンアップ (2026-08-18)
+| 項目 | 内容 |
+|------|------|
+| 実施内容 | IT企業納品レベルに向けた最終品質審査とクリーンアップを実施 |
+| 修正一覧 | ① マイグレーション削除 + EnsureCreated()導入によるSeed データ不一致解消 ② BarcodeService に ILogger 注入 + ArgumentNullException 追加 ③ ReceiptService コンストラクタ/メソッドに null チェック追加 ④ App.xaml.cs / MainWindow.xaml.cs に XML ドキュメント追加 ⑤ Deploy.ps1 のハードコードパスを $PSScriptRoot 相対パスに修正 ⑥ 不要ファイル削除（opencode.json, .filenesting.json） ⑦ ビルド成果物削除（bin/, obj/, .vs/） |
+| 変更ファイル | `App.xaml.cs`, `BarcodeService.cs`, `ReceiptService.cs`, `MainWindow.xaml.cs`, `Deploy.ps1`, `BarcodeServiceTests.cs`, `TransactionIntegrationTests.cs` |
+| 削除ファイル | `opencode.json`, `.filenesting.json`, `Migrations/` フォルダ |
+| スペック更新 | `step0208_service_architecture.md` v1.3 |
+| テスト結果 | 全76件パス |
+
 ## 3. テスト結果一覧
 
 | テストクラス | ファイルパス | 件数 | 状態 |
@@ -77,11 +130,12 @@ Spec-driven development の Step1〜Step4 に従い、仕様策定からリリ�
 | CartItemViewModelTests | `ViewModels/ViewModelTests.cs` | 9件 | PASS |
 | MainViewModelTests | `ViewModels/ViewModelTests.cs` | 25件 | PASS |
 | BarcodeServiceTests | `Services/BarcodeServiceTests.cs` | 10件 | PASS |
+| TransactionServiceTests | `Services/TransactionServiceTests.cs` | 8件 | PASS |
 | TransactionIntegrationTests | `Integration/TransactionIntegrationTests.cs` | 9件 | PASS |
 | ProductTests | `Models/ModelTests.cs` | 5件 | PASS |
 | TransactionTests | `Models/ModelTests.cs` | 4件 | PASS |
 | TransactionItemTests | `Models/ModelTests.cs` | 6件 | PASS |
-| **合計** | | **68件** | **全件PASS** |
+| **合計** | | **76件** | **全件PASS** |
 
 ## 4. ファイル構成（最終）
 
@@ -89,7 +143,6 @@ Spec-driven development の Step1〜Step4 に従い、仕様策定からリリ�
 ConveniencePos/
 ├── ConveniencePos.sln
 ├── .gitignore
-├── .filenesting.json
 ├── ConveniencePos/
 │   ├── ConveniencePos.csproj
 │   ├── App.xaml / App.xaml.cs
@@ -107,15 +160,16 @@ ConveniencePos/
 │   ├── Services/
 │   │   ├── IBarcodeService.cs
 │   │   ├── BarcodeService.cs
+│   │   ├── ITransactionService.cs
+│   │   ├── TransactionService.cs
 │   │   ├── IReceiptService.cs
 │   │   └── ReceiptService.cs
 │   ├── ViewModels/
-│   │   └── MainViewModel.cs
+│   │   ├── MainViewModel.cs
+│   │   └── CartItemViewModel.cs
 │   ├── Views/
 │   │   ├── MainWindow.xaml
 │   │   └── MainWindow.xaml.cs
-│   ├── Migrations/
-│   │   └── (4マイグレーション + Designer)
 │   └── docs/specs/
 │       ├── step0000_order_specification_preparation.md
 │       ├── step0100_constitution.md
@@ -157,7 +211,7 @@ ConveniencePos/
 | 日時 | 結果 | エラー | 警告 | テスト |
 |------|------|--------|------|--------|
 | 2026-08-17 | PASS | 0 | 0 | 42件PASS |
-| 2026-08-18 | PASS | 0 | 0 | 68件PASS |
+| 2026-08-18 | PASS | 0 | 0 | 76件PASS |
 
 ### 5.2 SonarQube相当の品質基準
 | 項目 | 基準 | 結果 |

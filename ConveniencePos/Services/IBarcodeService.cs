@@ -10,7 +10,8 @@ public interface IBarcodeService
     /// <summary>
     /// JANコードに合致する商品をDBから検索する。
     /// </summary>
-    /// <param name="barcode">JANコード（バーコード文字列）</param>
-    /// <returns>該当商品。存在しなければnull。</returns>
-    Task<Product?> LookupByBarcodeAsync(string barcode);
+    /// <param name="barcode">JANコード（バーコード文字列）。</param>
+    /// <param name="cancellationToken">キャンセルトークン。</param>
+    /// <returns>該当商品。存在しなければ <c>null</c>。</returns>
+    Task<Product?> LookupByBarcodeAsync(string barcode, CancellationToken cancellationToken = default);
 }

@@ -31,8 +31,9 @@
 - `Product.TaxRate` (int): 商品の適用税率 (8 or 10)。既存モデルに追加済み。
 - `TransactionItem.AppliedTaxRate` (int): 購入時点の税率記録。既存モデルに追加済み。
 
-### 4-2. ViewModel (`MainViewModel.cs`) (完了)
+### 4-2. ViewModel (`ViewModels/MainViewModel.cs`, `ViewModels/CartItemViewModel.cs`) (完了)
 - `CartItemViewModel.TaxRate` (int): カート内商品の税率を保持するプロパティを追加。
+- `CartItemViewModel.Quantity` (int): 数量プロパティ。最小値は1で、未満を設定すると `ArgumentOutOfRangeException` がスローされる。
 - `CartItemViewModel.LineTotalWithTax` (decimal): 税込小計。`Math.Floor(UnitPrice × Quantity × (1 + TaxRate / 100))` で計算。数量変更時に再計算される。
 - `AddItemAsync`: 商品追加時に `product.TaxRate` を `CartItemViewModel.TaxRate` に設定。新規商品は `PropertyChanged` イベントを `MainViewModel` に登録する。
 - `OnCartItemPropertyChanged`: `CartItemViewModel.Quantity` 変更時に `RefreshTotals()` を呼び、合計金額をリアルタイムに再計算する。

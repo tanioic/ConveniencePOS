@@ -2,8 +2,12 @@ using System.IO;
 using ConveniencePos.Data;
 using ConveniencePos.Models;
 using ConveniencePos.Services;
+using ConveniencePos.Tests.Services;
 using ConveniencePos.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Xunit;
 
 namespace ConveniencePos.Tests.Integration;
@@ -15,19 +19,22 @@ namespace ConveniencePos.Tests.Integration;
 /// </summary>
 public class TransactionIntegrationTests : IDisposable
 {
-    private readonly PosDbContext _dbContext;
+    private readonly DbContextOptions<PosDbContext> _options;
+    private readonly TestDbContextFactory _factory;
     private readonly MainViewModel _sut;
     private readonly string _tempReceiptDir;
 
     public TransactionIntegrationTests()
     {
-        var options = new DbContextOptionsBuilder<PosDbContext>()
+        _options = new DbContextOptionsBuilder<PosDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
-        _dbContext = new PosDbContext(options);
+        _factory = new TestDbContextFactory(_options);
         SeedProducts();
 
-        var barcodeService = new BarcodeService(_dbContext);
+        var barcodeService = new BarcodeService(_factory, NullLogger<BarcodeService>.Instance);
+        var transactionLogger = new Mock<ILogger<TransactionService>>();
+        var transactionService = new TransactionService(_factory, transactionLogger.Object);
 
         _tempReceiptDir = Path.Combine(Path.GetTempPath(), $"pos_uat_{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempReceiptDir);
@@ -39,27 +46,35 @@ public class TransactionIntegrationTests : IDisposable
             outputDirectory: _tempReceiptDir,
             width: 32);
 
-        _sut = new MainViewModel(_dbContext, barcodeService, receiptService);
+        var vmLogger = new Mock<ILogger<MainViewModel>>();
+        _sut = new MainViewModel(barcodeService, transactionService, receiptService, vmLogger.Object);
     }
 
     private void SeedProducts()
     {
-        _dbContext.Products.AddRange(
+        using var dbContext = new PosDbContext(_options);
+        dbContext.Products.AddRange(
             new Product { Id = 1, JanCode = "777777", Name = "おにぎり 梅", Price = 120m, TaxRate = 8 },
             new Product { Id = 2, JanCode = "888888", Name = "緑茶 500ml", Price = 150m, TaxRate = 8 },
             new Product { Id = 3, JanCode = "999999", Name = "ポテトチップス", Price = 180m, TaxRate = 10 },
             new Product { Id = 4, JanCode = "111111", Name = "ティッシュ", Price = 200m, TaxRate = 10 },
             new Product { Id = 5, JanCode = "222222", Name = "コーヒー 熱 350ml", Price = 110m, TaxRate = 10 }
         );
-        _dbContext.SaveChanges();
+        dbContext.SaveChanges();
     }
 
     public void Dispose()
     {
         _sut.Dispose();
+        _factory.Dispose();
         if (Directory.Exists(_tempReceiptDir))
             Directory.Delete(_tempReceiptDir, true);
     }
+
+    /// <summary>
+    /// テスト内でDB照証するためのヘルパーメソッド。
+    /// </summary>
+    private PosDbContext CreateDbContext() => new(_options);
 
     private async Task ScanBarcodeAsync(string janCode)
     {
@@ -83,12 +98,13 @@ public class TransactionIntegrationTests : IDisposable
 
         await _sut.ConfirmTransactionAsync();
 
-        var transactions = await _dbContext.Transactions.ToListAsync();
+        using var dbContext = CreateDbContext();
+        var transactions = await dbContext.Transactions.ToListAsync();
         Assert.Single(transactions);
         Assert.Equal(129m, transactions[0].TotalAmount);
         Assert.Equal(9m, transactions[0].TaxAmount);
 
-        var items = await _dbContext.TransactionItems.ToListAsync();
+        var items = await dbContext.TransactionItems.ToListAsync();
         Assert.Single(items);
         Assert.Equal(1, items[0].ProductId);
         Assert.Equal(1, items[0].Quantity);
@@ -123,7 +139,8 @@ public class TransactionIntegrationTests : IDisposable
         _sut.ReceivedAmount = 500m;
         await _sut.ConfirmTransactionAsync();
 
-        var transactions = await _dbContext.Transactions.ToListAsync();
+        using var dbContext = CreateDbContext();
+        var transactions = await dbContext.Transactions.ToListAsync();
         Assert.Single(transactions);
         var trxId = transactions[0].Id;
 
@@ -150,7 +167,8 @@ public class TransactionIntegrationTests : IDisposable
         _sut.ReceivedAmount = 400m;
         await _sut.ConfirmTransactionAsync();
 
-        var transactions = await _dbContext.Transactions.ToListAsync();
+        using var dbContext = CreateDbContext();
+        var transactions = await dbContext.Transactions.ToListAsync();
         Assert.Single(transactions);
         var receiptFile = Path.Combine(_tempReceiptDir, $"receipt_{transactions[0].Id}.txt");
         var content = await File.ReadAllTextAsync(receiptFile);
@@ -185,7 +203,8 @@ public class TransactionIntegrationTests : IDisposable
         _sut.ReceivedAmount = 1000m;
         await _sut.ConfirmTransactionAsync();
 
-        var items = await _dbContext.TransactionItems.ToListAsync();
+        using var dbContext = CreateDbContext();
+        var items = await dbContext.TransactionItems.ToListAsync();
         Assert.Equal(5, items.Count);
         Assert.Empty(_sut.CartItems);
     }
@@ -199,7 +218,8 @@ public class TransactionIntegrationTests : IDisposable
         _sut.ReceivedAmount = 400m;
         await _sut.ConfirmTransactionAsync();
 
-        var trx = await _dbContext.Transactions.FirstAsync();
+        using var dbContext = CreateDbContext();
+        var trx = await dbContext.Transactions.FirstAsync();
         Assert.Equal(27m, trx.TaxAmount);
         Assert.Equal(327m, trx.TotalAmount);
     }
@@ -215,50 +235,69 @@ public class TransactionIntegrationTests : IDisposable
         _sut.ReceivedAmount = 200m;
         await _sut.ConfirmTransactionAsync();
 
-        var transactions = await _dbContext.Transactions.ToListAsync();
+        using var dbContext = CreateDbContext();
+        var transactions = await dbContext.Transactions.ToListAsync();
         Assert.Equal(2, transactions.Count);
         Assert.NotEqual(transactions[0].Id, transactions[1].Id);
     }
 
     [Fact]
-    public async Task S009_ReceiptFile_CreatedOnDesktop_WithRealReceiptService()
+    public async Task S009_ReceiptFile_CreatedInTempDir_WithRealReceiptService()
     {
-        var realReceiptService = new ReceiptService(
-            storeName: "Convenience POS Store",
-            registerNumber: "レジ#01",
-            operatorName: "谷本 レジ担当",
-            outputDirectory: "Desktop",
-            width: 32);
+        var tempDir = Path.Combine(Path.GetTempPath(), $"pos_uat_real_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
 
-        using var dbContext2 = new PosDbContext(
-            new DbContextOptionsBuilder<PosDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-                .Options);
+        try
+        {
+            var realReceiptService = new ReceiptService(
+                storeName: "Convenience POS Store",
+                registerNumber: "レジ#01",
+                operatorName: "谷本 レジ担当",
+                outputDirectory: tempDir,
+                width: 32);
 
-        dbContext2.Products.AddRange(
-            new Product { Id = 1, JanCode = "777777", Name = "おにぎり 梅", Price = 120m, TaxRate = 8 }
-        );
-        dbContext2.SaveChanges();
+            var factory2 = new TestDbContextFactory(
+                new DbContextOptionsBuilder<PosDbContext>()
+                    .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                    .Options);
 
-        var vm = new MainViewModel(dbContext2, new BarcodeService(dbContext2), realReceiptService);
+            using (var seedCtx = factory2.CreateDbContext())
+            {
+                seedCtx.Products.AddRange(
+                    new Product { Id = 1, JanCode = "777777", Name = "おにぎり 梅", Price = 120m, TaxRate = 8 }
+                );
+                seedCtx.SaveChanges();
+            }
 
-        vm.BarcodeInput = "777777";
-        await vm.AddItemAsync();
+            var vmLogger = new Mock<ILogger<MainViewModel>>();
+            var txLogger = new Mock<ILogger<TransactionService>>();
+            var vm = new MainViewModel(
+                new BarcodeService(factory2, NullLogger<BarcodeService>.Instance),
+                new TransactionService(factory2, txLogger.Object),
+                realReceiptService,
+                vmLogger.Object);
 
-        vm.ReceivedAmount = 200m;
-        await vm.ConfirmTransactionAsync();
+            vm.BarcodeInput = "777777";
+            await vm.AddItemAsync();
 
-        var trx = await dbContext2.Transactions.FirstAsync();
-        var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        var receiptFile = Path.Combine(desktopPath, $"receipt_{trx.Id}.txt");
+            vm.ReceivedAmount = 200m;
+            await vm.ConfirmTransactionAsync();
 
-        Assert.True(File.Exists(receiptFile), $"デスクトップにレシートファイルが見つかりません: {receiptFile}");
+            using var verifyCtx = factory2.CreateDbContext();
+            var trx = await verifyCtx.Transactions.FirstAsync();
+            var receiptFile = Path.Combine(tempDir, $"receipt_{trx.Id}.txt");
 
-        var content = await File.ReadAllTextAsync(receiptFile);
-        Assert.Contains("Convenience POS Store", content);
-        Assert.Contains("おにぎり 梅", content);
-        Assert.Contains("税込合計", content);
+            Assert.True(File.Exists(receiptFile), $"レシートファイルが見つかりません: {receiptFile}");
 
-        File.Delete(receiptFile);
+            var content = await File.ReadAllTextAsync(receiptFile);
+            Assert.Contains("Convenience POS Store", content);
+            Assert.Contains("おにぎり 梅", content);
+            Assert.Contains("税込合計", content);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, true);
+        }
     }
 }

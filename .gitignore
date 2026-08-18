@@ -6,6 +6,15 @@
 # dotenv files
 .env
 
+# AI tool config
+opencode.json
+
+# VS file nesting
+.filenesting.json
+
+# Deployment packages
+*.zip
+
 # User-specific files
 *.rsuser
 *.suo
