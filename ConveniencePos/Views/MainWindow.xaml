@@ -4,11 +4,8 @@
         xmlns:vm="clr-namespace:ConveniencePos.ViewModels"
         Title="Convenience POS" Height="720" Width="1100"
         WindowStartupLocation="CenterScreen"
-        Background="#F0F2F5">
-
-    <Window.DataContext>
-        <vm:MainViewModel />
-    </Window.DataContext>
+        Background="#F0F2F5"
+        Closing="MainWindow_Closing">
 
     <Window.Resources>
         <Style x:Key="LabelStyle" TargetType="TextBlock">

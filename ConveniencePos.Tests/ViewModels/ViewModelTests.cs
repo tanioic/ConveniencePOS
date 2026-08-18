@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using ConveniencePos.Services;
 using ConveniencePos.ViewModels;
 using Xunit;
 
@@ -48,7 +49,6 @@ public class CartItemViewModelTests
             Quantity = 1
         };
 
-        // 120 * 1.08 = 129.6 -> Math.Floor = 129
         Assert.Equal(129m, item.LineTotalWithTax);
     }
 
@@ -64,7 +64,6 @@ public class CartItemViewModelTests
             Quantity = 1
         };
 
-        // 180 * 1.10 = 198
         Assert.Equal(198m, item.LineTotalWithTax);
     }
 
@@ -80,8 +79,6 @@ public class CartItemViewModelTests
             Quantity = 2
         };
 
-        // 150 * 2 = 300 (LineTotal)
-        // 300 * 1.08 = 324 (LineTotalWithTax)
         Assert.Equal(300m, item.LineTotal);
         Assert.Equal(324m, item.LineTotalWithTax);
     }
@@ -165,7 +162,6 @@ public class CartItemViewModelTests
 
         item.Quantity = 3;
 
-        // 100 * 3 = 300 -> 300 * 1.10 = 330
         Assert.Equal(330m, item.LineTotalWithTax);
     }
 
@@ -181,7 +177,6 @@ public class CartItemViewModelTests
             Quantity = 1
         };
 
-        // 111 * 1.08 = 119.88 -> Math.Floor = 119
         Assert.Equal(119m, item.LineTotalWithTax);
     }
 }
@@ -190,11 +185,10 @@ public class MainViewModelTests
 {
     private static MainViewModel CreateViewModel()
     {
-        var vm = new MainViewModel();
-        var field = typeof(MainViewModel).GetField("_dbContext",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        field?.SetValue(vm, new Moq.Mock<ConveniencePos.Data.PosDbContext>().Object);
-        return vm;
+        var mockDbContext = new Moq.Mock<ConveniencePos.Data.PosDbContext>();
+        var mockBarcodeService = new Moq.Mock<IBarcodeService>();
+        var mockReceiptService = new Moq.Mock<IReceiptService>();
+        return new MainViewModel(mockDbContext.Object, mockBarcodeService.Object, mockReceiptService.Object);
     }
 
     private static void AddCartItem(MainViewModel vm, int productId, string name,
@@ -215,7 +209,6 @@ public class MainViewModelTests
     public void Subtotal_EmptyCart_ReturnsZero()
     {
         var vm = CreateViewModel();
-
         Assert.Equal(0m, vm.Subtotal);
     }
 
@@ -224,7 +217,6 @@ public class MainViewModelTests
     {
         var vm = CreateViewModel();
         AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 2);
-
         Assert.Equal(240m, vm.Subtotal);
     }
 
@@ -235,7 +227,6 @@ public class MainViewModelTests
         AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
         AddCartItem(vm, 2, "お茶", 150m, 8, 1);
         AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
-
         Assert.Equal(450m, vm.Subtotal);
     }
 
@@ -246,7 +237,6 @@ public class MainViewModelTests
         AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
         AddCartItem(vm, 2, "お茶", 150m, 8, 1);
         AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
-
         Assert.Equal(270m, vm.TaxableAmount8);
     }
 
@@ -257,7 +247,6 @@ public class MainViewModelTests
         AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
         AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
         AddCartItem(vm, 4, "ティッシュ", 200m, 10, 1);
-
         Assert.Equal(380m, vm.TaxableAmount10);
     }
 
@@ -267,8 +256,6 @@ public class MainViewModelTests
         var vm = CreateViewModel();
         AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
         AddCartItem(vm, 2, "お茶", 150m, 8, 1);
-
-        // TaxableAmount8 = 270, 270 * 0.08 = 21.6 -> Math.Floor = 21
         Assert.Equal(21m, vm.TaxAmount8);
     }
 
@@ -278,8 +265,6 @@ public class MainViewModelTests
         var vm = CreateViewModel();
         AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
         AddCartItem(vm, 4, "ティッシュ", 200m, 10, 1);
-
-        // TaxableAmount10 = 380, 380 * 0.10 = 38
         Assert.Equal(38m, vm.TaxAmount10);
     }
 
@@ -289,8 +274,6 @@ public class MainViewModelTests
         var vm = CreateViewModel();
         AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
         AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
-
-        // Tax8: 120 * 0.08 = 9.6 -> 9, Tax10: 180 * 0.10 = 18
         Assert.Equal(27m, vm.TaxAmount);
     }
 
@@ -300,8 +283,6 @@ public class MainViewModelTests
         var vm = CreateViewModel();
         AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
         AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
-
-        // Subtotal = 300, Tax = 27
         Assert.Equal(327m, vm.TotalAmount);
     }
 
@@ -310,10 +291,7 @@ public class MainViewModelTests
     {
         var vm = CreateViewModel();
         AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-
-        // Subtotal = 120, Tax = 9 (120*0.08=9.6->9), Total = 129
         vm.ReceivedAmount = 200m;
-
         Assert.Equal(71m, vm.Change);
     }
 
@@ -322,10 +300,7 @@ public class MainViewModelTests
     {
         var vm = CreateViewModel();
         AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-
-        // Total = 129
         vm.ReceivedAmount = 100m;
-
         Assert.Equal(0m, vm.Change);
     }
 
@@ -334,7 +309,6 @@ public class MainViewModelTests
     {
         var vm = CreateViewModel();
         AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
-
         Assert.Equal(0m, vm.Change);
     }
 
@@ -342,9 +316,7 @@ public class MainViewModelTests
     public void TaxAmount_FloorTruncation_Applied()
     {
         var vm = CreateViewModel();
-        // 111 * 0.08 = 8.88 -> Math.Floor = 8
         AddCartItem(vm, 1, "テスト商品", 111m, 8, 1);
-
         Assert.Equal(8m, vm.TaxAmount8);
     }
 
@@ -352,32 +324,18 @@ public class MainViewModelTests
     public void MixedTaxScenario_SeedProducts()
     {
         var vm = CreateViewModel();
-        // Seed data: おにぎり(120, 8%), お茶(150, 8%), チップス(180, 10%), ティッシュ(200, 10%), コーヒー(110, 10%)
         AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
         AddCartItem(vm, 2, "お茶 500ml", 150m, 8, 1);
         AddCartItem(vm, 3, "ポテトチップス", 180m, 10, 1);
         AddCartItem(vm, 4, "ティッシュ", 200m, 10, 1);
         AddCartItem(vm, 5, "ホットコーヒー 350ml", 110m, 10, 1);
 
-        // Subtotal = 120 + 150 + 180 + 200 + 110 = 760
         Assert.Equal(760m, vm.Subtotal);
-
-        // TaxableAmount8 = 120 + 150 = 270
         Assert.Equal(270m, vm.TaxableAmount8);
-
-        // TaxableAmount10 = 180 + 200 + 110 = 490
         Assert.Equal(490m, vm.TaxableAmount10);
-
-        // TaxAmount8 = Math.Floor(270 * 0.08) = Math.Floor(21.6) = 21
         Assert.Equal(21m, vm.TaxAmount8);
-
-        // TaxAmount10 = Math.Floor(490 * 0.10) = Math.Floor(49.0) = 49
         Assert.Equal(49m, vm.TaxAmount10);
-
-        // TaxAmount = 21 + 49 = 70
         Assert.Equal(70m, vm.TaxAmount);
-
-        // TotalAmount = 760 + 70 = 830
         Assert.Equal(830m, vm.TotalAmount);
     }
 
@@ -395,7 +353,6 @@ public class MainViewModelTests
         };
 
         vm.ReceivedAmount = 200m;
-
         Assert.True(changed);
     }
 
@@ -403,7 +360,6 @@ public class MainViewModelTests
     public void CartItems_IsEmptyByDefault()
     {
         var vm = CreateViewModel();
-
         Assert.Empty(vm.CartItems);
     }
 
@@ -411,7 +367,6 @@ public class MainViewModelTests
     public void BarcodeInput_DefaultIsEmpty()
     {
         var vm = CreateViewModel();
-
         Assert.Equal(string.Empty, vm.BarcodeInput);
     }
 
@@ -419,7 +374,74 @@ public class MainViewModelTests
     public void ReceivedAmount_DefaultIsZero()
     {
         var vm = CreateViewModel();
-
         Assert.Equal(0m, vm.ReceivedAmount);
+    }
+
+    [Fact]
+    public void ErrorMessage_DefaultIsEmpty()
+    {
+        var vm = CreateViewModel();
+        Assert.Equal(string.Empty, vm.ErrorMessage);
+        Assert.False(vm.HasError);
+    }
+
+    [Fact]
+    public void CanConfirmTransaction_EmptyCart_ReturnsFalse()
+    {
+        var vm = CreateViewModel();
+        Assert.False(vm.CanConfirmTransaction);
+    }
+
+    [Fact]
+    public void CanConfirmTransaction_InsufficientPayment_ReturnsFalse()
+    {
+        var vm = CreateViewModel();
+        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
+        vm.ReceivedAmount = 50m;
+        Assert.False(vm.CanConfirmTransaction);
+    }
+
+    [Fact]
+    public void CanConfirmTransaction_SufficientPayment_ReturnsTrue()
+    {
+        var vm = CreateViewModel();
+        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
+        vm.ReceivedAmount = 200m;
+        Assert.True(vm.CanConfirmTransaction);
+    }
+
+    [Fact]
+    public void CanConfirmTransaction_ExactPayment_ReturnsTrue()
+    {
+        var vm = CreateViewModel();
+        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
+        // Total = 129 (120 + floor(120*0.08)=9)
+        vm.ReceivedAmount = 129m;
+        Assert.True(vm.CanConfirmTransaction);
+    }
+
+    [Fact]
+    public void CanConfirmTransaction_ChangesWithReceivedAmount()
+    {
+        var vm = CreateViewModel();
+        AddCartItem(vm, 1, "おにぎり 梅", 120m, 8, 1);
+
+        var changed = false;
+        ((INotifyPropertyChanged)vm).PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MainViewModel.CanConfirmTransaction))
+                changed = true;
+        };
+
+        vm.ReceivedAmount = 200m;
+        Assert.True(changed);
+    }
+
+    [Fact]
+    public void Dispose_CanBeCalledMultipleTimes()
+    {
+        var vm = CreateViewModel();
+        vm.Dispose();
+        vm.Dispose();
     }
 }

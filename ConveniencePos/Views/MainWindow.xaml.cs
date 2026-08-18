@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Input;
+using ConveniencePos.ViewModels;
 
 namespace ConveniencePos.Views
 {
@@ -15,9 +16,19 @@ namespace ConveniencePos.Views
         {
             if (e.Key == Key.Enter)
             {
-                var vm = DataContext as ViewModels.MainViewModel;
-                vm?.AddItemCommand.Execute(null);
+                if (DataContext is MainViewModel vm)
+                {
+                    vm.AddItemCommand.Execute(null);
+                }
                 BarcodeTextBox.Focus();
+            }
+        }
+
+        private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (DataContext is IDisposable disposable)
+            {
+                disposable.Dispose();
             }
         }
     }

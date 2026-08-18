@@ -475,6 +475,9 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 
+# Installer output
+installer/output/
+
 # Windows shortcuts
 *.lnk
 
