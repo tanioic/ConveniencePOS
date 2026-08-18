@@ -29,7 +29,7 @@ xcopy /E /Y "C:\Backup\ConveniencePos\v1.0" "C:\Program Files\ConveniencePos\"
 # 1. マイグレーションのロールバック（特定のバージョンまで）
 dotnet ef database update <移行前のマイグレーション名> --project ConveniencePos
 
-# 2. バックアップからの復元（严重な場合）
+# 2. バックアップからの復元（重大な場合）
 sqllocaldb stop MSSQLLocalDB
 sqllocaldb start MSSQLLocalDB
 # バックアップファイルからリストア

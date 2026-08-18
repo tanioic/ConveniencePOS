@@ -235,7 +235,7 @@ step0100_constitution.md (Step1)
 1. **Step の順序は厳守する**: Step1 → Step2 → Step3 → Step4 の順で進める
 2. **Step3 は人間のレビュー必須**: step0300_plan.md はAIが作成しても、人間がレビューしてからStep4に進む
 3. **Step4 は自動生成**: step0400_tasks.md はstep0300_plan.md の方針に沿ってAIが自動生成する
-4. **仕様変更時は上游から修正**: step0200_spec.md を変更した場合、step0300_plan.md と step0400_tasks.md も再点検する
+4. **仕様変更時は上流から修正**: step0200_spec.md を変更した場合、step0300_plan.md と step0400_tasks.md も再点検する
 5. **step0100_constitution.md はプロジェクト全体で共有**: すべての開発者が参照し、ルール遵守の責任を持つ
 
 ## 7. 現状のステップ状況

@@ -42,7 +42,7 @@
 - [X] Task 6.4: `step0306_uat_plan.md`（UAT計画）を作成し、UAT結果を記録する
 - [X] Task 6.5: `step0307_rollback_procedures.md`（ロールバック手順）を作成する
 - [X] Task 6.6: `step0308_data_dictionary.md`（データ辞書）を作成する
-- [X] Task 6.7: `step0309_traceability_matrix.md`（トレーサビリティ矩阵）を作成し、全ACカバーを確認する
+- [X] Task 6.7: `step0309_traceability_matrix.md`（トレーサビリティ行列）を作成し、全ACカバーを確認する
 - [X] Task 6.8: 全22仕様書の Sign-off（田中太郎）を記録する
 - [X] Task 6.9: 仕様書ファイル名を4桁形式（step0000〜step0400）に統一し、内部参照を更新する
 
