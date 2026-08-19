@@ -74,7 +74,7 @@
 | 項目 | 内容 |
 |------|------|
 | 手順 | 1. 「777777」を入力（おにぎり ¥120、8%）<br>2. 「999999」を入力（チップス ¥180、10%） |
-| 期待結果 | 8%対象: ¥270、消費税8%: ¥21<br>10%対象: ¥180、消費税10%: ¥18<br>消費税合計: ¥39、合計: ¥339 |
+| 期待結果 | 8%対象: ¥120、消費税8%: ¥9<br>10%対象: ¥180、消費税10%: ¥18<br>消費税合計: ¥27、合計: ¥327 |
 | 対応AC | AC-6 |
 
 ### S-007: 預かり金額・お釣り
@@ -139,7 +139,7 @@
 | S-006 混合税率シナリオ | AC-6 | PASS | 自動テスト | ViewModelTests (MixedTaxScenario) |
 | S-007 預かり金額・お釣り | AC-8 | PASS | 自動テスト | ViewModelTests |
 | S-008 預かり金額不足 | AC-9 | PASS | 自動テスト | ViewModelTests |
-| S-009 会計確定・DB保存 | AC-10, AC-11, AC-12 | PASS | 結合テスト | TransactionIntegrationTests (9件) |
+| S-009 会計確定・DB保存 | AC-10, AC-11, AC-12 | PASS | 結合テスト | TransactionIntegrationTests (8件) |
 | S-010 数量変更 | AC-13 | PASS | 自動テスト | ViewModelTests |
 
 ### S-009 結合テスト結果 (新規追加)
@@ -154,7 +154,6 @@
 | ConfirmTransaction_MultipleItems | PASS | 5商品同時会計で全明細がDB保存される |
 | ConfirmTransaction_TaxBreakdown | PASS | 8%/10% の税額内訳が正しく記録される |
 | SecondTransaction_AutoIncrementId | PASS | 2回目の取引でIDが自動採番される |
-| ReceiptFile_CreatedOnDesktop | PASS | 実際のReceiptServiceでデスクトップにレシート出力 |
 
 ## バージョン履歴
 

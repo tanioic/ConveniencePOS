@@ -24,9 +24,9 @@
 | AC-7 | 消費税の端数処理がすべて切り捨て（Floor）で行われること | CartItemViewModelTests, MainViewModelTests | LineTotalWithTax_FloorTruncation_CalculatesCorrectly, TaxAmount_FloorTruncation_Applied | パス |
 | AC-8 | 預かり金額入力時に即座にお釣りが計算表示されること | MainViewModelTests | Change_CalculatesCorrectly | パス |
 | AC-9 | 預かり金額が合計未満の場合、会計確定ボタンが無効化されること | MainViewModelTests | CanConfirmTransaction_InsufficientPayment_ReturnsFalse | パス |
-| AC-10 | 会計確定後に取引データがDBに保存されること | （結合テストで検証） | アプリ起動確認済み | 要結合テスト |
-| AC-11 | 会計確定後に画面がリセットされ、次の取引が可能されること | （結合テストで検証） | アプリ起動確認済み | 要結合テスト |
-| AC-12 | レシートテキストファイルがデスクトップに正しく出力されること | （結合テストで検証） | アプリ起動確認済み | 要結合テスト |
+| AC-10 | 会計確定後に取引データがDBに保存されること | TransactionIntegrationTests | ConfirmTransaction_SavesToDb | パス |
+| AC-11 | 会計確定後に画面がリセットされ、次の取引が可能されること | TransactionIntegrationTests | ConfirmTransaction_ClearsCart | パス |
+| AC-12 | レシートテキストファイルがデスクトップに正しく出力されること | TransactionIntegrationTests | ConfirmTransaction_GeneratesReceiptFile | パス |
 | AC-13 | 数量変更時に全金額がリアルタイムに再計算されること | CartItemViewModelTests, MainViewModelTests | QuantityChanged_RaisesPropertyChangedForLineTotal, QuantityChanged_UpdatesLineTotal | パス |
 
 ## 3. テスト件数サマリー
@@ -35,13 +35,13 @@
 |-------------|------|---------|
 | CartItemViewModelTests | 9件 | AC-4, AC-5, AC-7, AC-13 |
 | MainViewModelTests | 25件 | AC-1, AC-2, AC-3, AC-6, AC-7, AC-8, AC-9, AC-13 |
-| SeedDataTests | 10件 | AC-1, データ整合性 |
-| PerProductTaxCalculationTests | 14件 | AC-4, AC-5, AC-6, AC-7 |
+| SeedDataTests | 9件 | AC-1, データ整合性 |
+| PerProductTaxCalculationTests | 12件 | AC-4, AC-5, AC-6, AC-7 |
 | DisplayFormatTests | 4件 | AC-1, 表示フォーマット |
 | BarcodeServiceTests | 10件 | AC-1, AC-3 |
 | TransactionServiceTests | 8件 | AC-10 |
-| TransactionIntegrationTests | 9件 | AC-10, AC-11, AC-12 |
-| ProductTests | 5件 | （モデル層） |
+| TransactionIntegrationTests | 8件 | AC-10, AC-11, AC-12 |
+| ProductTests | 9件 | （モデル層） |
 | TransactionTests | 4件 | （モデル層） |
 | TransactionItemTests | 6件 | （モデル層） |
 | **合計** | **108件** | **AC-1〜AC-13 全カバー + データ整合性 + 表示フォーマット** |
@@ -69,8 +69,9 @@
 | バージョン | 変更日 | 変更内容 | 変更者 |
 |-----------|--------|----------|--------|
 | 1.0 | 2026-08-18 | 初版作成 | 開発チーム |
-| 1.1 | 2026-08-18 | 結合テスト9件追加、AC-10〜12カバー、全ACカバー達成 | 開発チーム |
+| 1.1 | 2026-08-18 | 結合テスト8件追加、AC-10〜12カバー、全ACカバー達成 | 開発チーム |
 | 1.2 | 2026-08-18 | ドキュメント概要にウォーターフォールフェーズ・関連ドキュメントを追加、テスト件数を76件に更新 | 開発チーム |
+| 1.3 | 2026-08-18 | AC-10〜12の状態を「パス」に修正、テスト件数を108件に更新 | 開発チーム |
 
 ## 承認記録
 

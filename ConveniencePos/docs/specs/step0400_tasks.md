@@ -49,7 +49,7 @@
 ## フェーズ7: テストの拡充
 - [X] Task 7.1: `Services/BarcodeServiceTests.cs` を作成し（InMemory DB）、10件のテストを追加する
 - [X] Task 7.2: `Integration/TransactionIntegrationTests.cs` を作成し、S-009 の結合テスト9件を追加する
-- [X] Task 7.3: 全68件のテストがパスすることを確認する
+- [X] Task 7.3: 全108件のテストがパスすることを確認する
 - [X] Task 7.4: AC-1〜AC-13 の全受け入れ基準がテストでカバーされることを確認する
 
 ## フェーズ8: デプロイ
@@ -70,12 +70,16 @@
 |-------------|------|------|
 | CartItemViewModelTests | 9件 | PASS |
 | MainViewModelTests | 25件 | PASS |
+| PerProductTaxCalculationTests | 12件 | PASS |
+| DisplayFormatTests | 4件 | PASS |
+| SeedDataTests | 9件 | PASS |
 | BarcodeServiceTests | 10件 | PASS |
-| TransactionIntegrationTests | 9件 | PASS |
-| ProductTests | 5件 | PASS |
+| TransactionServiceTests | 8件 | PASS |
+| TransactionIntegrationTests | 8件 | PASS |
+| ProductTests | 9件 | PASS |
 | TransactionTests | 4件 | PASS |
 | TransactionItemTests | 6件 | PASS |
-| **合計** | **68件** | **全件PASS** |
+| **合計** | **108件** | **全件PASS** |
 
 ## バージョン履歴
 

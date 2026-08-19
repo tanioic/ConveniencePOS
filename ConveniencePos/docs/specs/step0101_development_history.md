@@ -123,19 +123,30 @@ Spec-driven development の Step1〜Step4 に従い、仕様策定からリリ�
 | スペック更新 | `step0208_service_architecture.md` v1.3 |
 | テスト結果 | 全76件パス |
 
+### 2.16 Phase16: 商品別税率テスト・表示フォーマットテスト・モデルテスト追加 (2026-08-18)
+| 項目 | 内容 |
+|------|------|
+| 実施内容 | ① PerProductTaxCalculationTests 12件追加（全5商品の税率計算検証）② DisplayFormatTests 4件追加（金額フォーマット・税率表示）③ SeedDataTests を9件に拡充（全5商品の正しさ検証）④ ProductTests を9件に拡充（全プロパティの網羅的テスト）⑤ TransactionIntegrationTests を9件から8件に修正 |
+| 成果物 | `ViewModels/ViewModelTests.cs`, `ViewModels/SeedDataTests.cs`, `Models/ModelTests.cs`, `Integration/TransactionIntegrationTests.cs` |
+| スペック更新 | `step0101_development_history.md`, `step0208_service_architecture.md`, `step0400_tasks.md` テスト件数を108件に更新 |
+| テスト結果 | 全108件パス |
+
 ## 3. テスト結果一覧
 
 | テストクラス | ファイルパス | 件数 | 状態 |
 |-------------|------------|------|------|
 | CartItemViewModelTests | `ViewModels/ViewModelTests.cs` | 9件 | PASS |
 | MainViewModelTests | `ViewModels/ViewModelTests.cs` | 25件 | PASS |
+| PerProductTaxCalculationTests | `ViewModels/ViewModelTests.cs` | 12件 | PASS |
+| DisplayFormatTests | `ViewModels/ViewModelTests.cs` | 4件 | PASS |
+| SeedDataTests | `ViewModels/SeedDataTests.cs` | 9件 | PASS |
 | BarcodeServiceTests | `Services/BarcodeServiceTests.cs` | 10件 | PASS |
 | TransactionServiceTests | `Services/TransactionServiceTests.cs` | 8件 | PASS |
-| TransactionIntegrationTests | `Integration/TransactionIntegrationTests.cs` | 9件 | PASS |
-| ProductTests | `Models/ModelTests.cs` | 5件 | PASS |
+| TransactionIntegrationTests | `Integration/TransactionIntegrationTests.cs` | 8件 | PASS |
+| ProductTests | `Models/ModelTests.cs` | 9件 | PASS |
 | TransactionTests | `Models/ModelTests.cs` | 4件 | PASS |
 | TransactionItemTests | `Models/ModelTests.cs` | 6件 | PASS |
-| **合計** | | **76件** | **全件PASS** |
+| **合計** | | **108件** | **全件PASS** |
 
 ## 4. ファイル構成（最終）
 

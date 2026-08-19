@@ -459,16 +459,17 @@ var vm = new MainViewModel(
 
 ## 8. 例外処理の実装パターン (C#)
 ```csharp
-// TransactionService の例
+// TransactionService の例（IDbContextFactory 使用）
 public async Task<Transaction> SaveTransactionAsync(
     decimal totalAmount, decimal taxAmount,
     IReadOnlyList<TransactionItem> items, CancellationToken cancellationToken = default)
 {
     var transaction = new Transaction { ... };
-    _dbContext.Transactions.Add(transaction);
+    await using var dbContext = await _contextFactory.CreateDbContextAsync(cancellationToken);
+    dbContext.Transactions.Add(transaction);
     try
     {
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
     catch (DbUpdateException ex)
     {
